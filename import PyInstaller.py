@@ -19,5 +19,6 @@ PyInstaller.__main__.run([
 '--onefile',
 '--windowed',
 '--icon=icon.ico',
-'--add-data "images;images"'
+'--add-data "images;images"',
+'--add-data "credentials.json;."'
 ])

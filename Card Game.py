@@ -1,5 +1,5 @@
-import math
 import time
+import pickle
 import random
 import tkinter as tk
 from tkinter import ttk
@@ -8,6 +8,26 @@ import json
 import os
 import sys
 from PIL import Image, ImageTk
+import io
+from googleapiclient.discovery import build
+from googleapiclient.http import MediaFileUpload, MediaIoBaseDownload
+from google_auth_oauthlib.flow import InstalledAppFlow
+from google.auth.transport.requests import Request
+
+SCOPES = ['https://www.googleapis.com/auth/drive.file']
+CREDENTIALS_FILE = 'credentials.json'
+# Store token.pickle in user home for persistence in PyInstaller
+TOKEN_PICKLE = os.path.join(os.path.expanduser('~'), 'card_game_token.pickle')
+DRIVE_FILENAME = 'card_game_save.json'
+
+# Helper to get credentials.json path (works for PyInstaller)
+def get_credentials_path():
+    if hasattr(sys, '_MEIPASS'):
+        cred_path = os.path.join(sys._MEIPASS, CREDENTIALS_FILE)
+        if os.path.exists(cred_path):
+            return cred_path
+    # Fallback: current directory
+    return os.path.join(os.path.dirname(sys.executable if hasattr(sys, 'frozen') else __file__), CREDENTIALS_FILE)
 
 # Card deck and upgrade system
 base_suits = [
@@ -460,6 +480,35 @@ root.overrideredirect(True)  # Remove default title bar
 card_image_label = ttk.Label(root)
 card_image_label.pack(pady=10)
 
+# Tooltip helper class
+class ToolTip:
+    def __init__(self, widget, text):
+        self.widget = widget
+        self.text = text
+        self.tipwindow = None
+        widget.bind("<Enter>", self.show_tip)
+        widget.bind("<Leave>", self.hide_tip)
+
+    def show_tip(self, event=None):
+        if self.tipwindow or not self.text:
+            return
+        x, y, cx, cy = self.widget.bbox("insert") if hasattr(self.widget, 'bbox') else (0,0,0,0)
+        x = x + self.widget.winfo_rootx() + 25
+        y = y + self.widget.winfo_rooty() + 20
+        self.tipwindow = tw = tk.Toplevel(self.widget)
+        tw.wm_overrideredirect(True)
+        tw.wm_geometry(f"+{x}+{y}")
+        label = tk.Label(tw, text=self.text, justify=tk.LEFT,
+                        background="#ffffe0", relief=tk.SOLID, borderwidth=1,
+                        font=("tahoma", "10", "normal"))
+        label.pack(ipadx=1)
+
+    def hide_tip(self, event=None):
+        tw = self.tipwindow
+        self.tipwindow = None
+        if tw:
+            tw.destroy()
+
 # Card Art Gallery window
 def open_card_gallery():
     gallery_win = tk.Toplevel(root)
@@ -485,6 +534,111 @@ def open_card_gallery():
         ttk.Label(frame, text=card, font=('Arial', 10)).grid(row=idx//cols*2+1, column=idx%cols, padx=10)
     frame.update_idletasks()
     canvas.config(scrollregion=canvas.bbox('all'))
+
+# Leaderboard file
+LEADERBOARD_FILE = 'card_game_leaderboard.json'
+
+# Helper to load leaderboard
+def load_leaderboard():
+    if os.path.exists(LEADERBOARD_FILE):
+        with open(LEADERBOARD_FILE, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    return []
+
+# Helper to save leaderboard
+def save_leaderboard(scores):
+    with open(LEADERBOARD_FILE, 'w', encoding='utf-8') as f:
+        json.dump(scores, f)
+
+# Add score to leaderboard
+def add_score_to_leaderboard(name, score):
+    scores = load_leaderboard()
+    scores.append({'name': name, 'score': score, 'date': time.strftime('%Y-%m-%d %H:%M')})
+    scores = sorted(scores, key=lambda x: x['score'], reverse=True)[:10]
+    save_leaderboard(scores)
+
+# Stub cloud leaderboard
+def load_cloud_leaderboard():
+    # Replace with real API call
+    return [
+        {'name': 'CloudUser1', 'score': 9999, 'date': '2025-08-19 12:00'},
+        {'name': 'CloudUser2', 'score': 8888, 'date': '2025-08-18 15:30'}
+    ]
+
+# Leaderboard window
+def open_leaderboard():
+    win = tk.Toplevel(root)
+    win.title('Leaderboard')
+    win.geometry('400x400')
+    ttk.Label(win, text='Leaderboard', font=('Arial', 16)).pack(pady=10)
+    local_scores = load_leaderboard()
+    cloud_scores = load_cloud_leaderboard()
+    ttk.Label(win, text='Local Scores', font=('Arial', 12)).pack(pady=5)
+    for entry in local_scores:
+        ttk.Label(win, text=f"{entry['name']}: {entry['score']} ({entry['date']})", font=('Arial', 10)).pack()
+    ttk.Label(win, text='Cloud Scores', font=('Arial', 12)).pack(pady=5)
+    for entry in cloud_scores:
+        ttk.Label(win, text=f"{entry['name']}: {entry['score']} ({entry['date']})", font=('Arial', 10)).pack()
+
+# Google Drive API integration
+# Setup instructions:
+# 1. Run: pip install --upgrade google-api-python-client google-auth-httplib2 google-auth-oauthlib
+# 2. Go to https://console.cloud.google.com/apis/credentials and create OAuth 2.0 Client ID (Desktop)
+# 3. Download credentials.json and place in the same folder as this script
+# 4. On first run, browser will open for login/consent
+# Authenticate and get Drive service
+
+def get_drive_service():
+    creds = None
+    if os.path.exists(TOKEN_PICKLE):
+        with open(TOKEN_PICKLE, 'rb') as token:
+            creds = pickle.load(token)
+    if not creds or not creds.valid:
+        if creds and creds.expired and creds.refresh_token:
+            creds.refresh(Request())
+        else:
+            cred_path = get_credentials_path()
+            flow = InstalledAppFlow.from_client_secrets_file(cred_path, SCOPES)
+            creds = flow.run_local_server(port=0)
+        with open(TOKEN_PICKLE, 'wb') as token:
+            pickle.dump(creds, token)
+    return build('drive', 'v3', credentials=creds)
+
+# Upload save file to Google Drive
+def upload_cloud_save():
+    try:
+        service = get_drive_service()
+        # Search for existing file
+        results = service.files().list(q=f"name='{DRIVE_FILENAME}' and trashed=false", fields="files(id)").execute()
+        file_id = results['files'][0]['id'] if results['files'] else None
+        media = MediaFileUpload(DRIVE_FILENAME, mimetype='application/json', resumable=True)
+        if file_id:
+            service.files().update(fileId=file_id, media_body=media).execute()
+        else:
+            service.files().create(body={'name': DRIVE_FILENAME}, media_body=media).execute()
+        result_label.config(text='Save uploaded to Google Drive.')
+    except Exception as e:
+        result_label.config(text=f'Cloud upload failed: {e}')
+
+# Download save file from Google Drive
+def download_cloud_save():
+    try:
+        service = get_drive_service()
+        results = service.files().list(q=f"name='{DRIVE_FILENAME}' and trashed=false", fields="files(id)").execute()
+        if not results['files']:
+            result_label.config(text='No cloud save found.')
+            return
+        file_id = results['files'][0]['id']
+        request = service.files().get_media(fileId=file_id)
+        fh = io.FileIO(DRIVE_FILENAME, 'wb')
+        downloader = MediaIoBaseDownload(fh, request)
+        done = False
+        while not done:
+            status, done = downloader.next_chunk()
+        result_label.config(text='Save downloaded from Google Drive.')
+        load_progress()
+    except Exception as e:
+        result_label.config(text=f'Cloud download failed: {e}')
 
 # Move draw_card definition above GUI creation
 def draw_card():
@@ -572,11 +726,24 @@ def draw_card():
     total_label.config(text=f'Total: {total_count}')
     next_upgrade_discount = 1.0
     random.shuffle(deck)
-    # Show image for last drawn card
+    # Show image for last drawn card with fade-in animation
     if last_drawn:
         img = load_card_image(last_drawn)
-        card_image_label.config(image=img)
-        card_image_label.image = img
+        def fade_in(step=0):
+            alpha = int(255 * (step / 10))
+            if alpha > 255:
+                alpha = 255
+            # Create a faded image
+            pil_img = Image.open(get_card_image_filename(last_drawn)).resize(CARD_IMAGE_SIZE).convert('RGBA')
+            pil_img.putalpha(alpha)
+            tk_img = ImageTk.PhotoImage(pil_img)
+            card_image_label.config(image=tk_img)
+            card_image_label.image = tk_img
+            if step < 10:
+                root.after(30, lambda: fade_in(step+1))
+        fade_in(0)
+    # Optionally, add score to leaderboard
+    add_score_to_leaderboard('Player', total_count)
 
 # Helper to get save path compatible with PyInstaller
 def get_save_path():
@@ -679,6 +846,16 @@ title_label.pack(side='left', padx=10)
 # Add Card Gallery button to title bar
 gallery_btn = ttk.Button(title_bar, text='Card Gallery', style='TitleBar.TButton', command=open_card_gallery)
 gallery_btn.pack(side='right', padx=5)
+
+# Leaderboard button
+leaderboard_btn = ttk.Button(title_bar, text='Leaderboard', style='TitleBar.TButton', command=open_leaderboard)
+leaderboard_btn.pack(side='right', padx=5)
+
+# Cloud Save/Load buttons
+cloud_save_btn = ttk.Button(title_bar, text='Upload Cloud Save', style='TitleBar.TButton', command=upload_cloud_save)
+cloud_save_btn.pack(side='right', padx=5)
+cloud_load_btn = ttk.Button(title_bar, text='Download Cloud Save', style='TitleBar.TButton', command=download_cloud_save)
+cloud_load_btn.pack(side='right', padx=5)
 
 # Clock label
 clock_label = ttk.Label(title_bar, style='TitleBar.TLabel')
