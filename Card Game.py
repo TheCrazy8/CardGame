@@ -1,0 +1,551 @@
+import math
+import time
+import random
+import tkinter as tk
+from tkinter import ttk
+import sv_ttk
+
+# Card deck and upgrade system
+base_suits = [
+    'Hearts', 'Diamonds', 'Clubs', 'Spades', 'Stars', 'Moons', 'Crowns', 'Leaves', 'Suns', 'Waves',
+    'Shields', 'Orbs', 'Axes', 'Spears', 'Rings', 'Cups', 'Scrolls', 'Keys', 'Masks', 'Fangs',
+    'Eyes', 'Wings', 'Roots', 'Flames', 'Clouds', 'Stones', 'Webs', 'Beams', 'Echoes', 'Frost',
+    'Petals', 'Coins', 'Swords', 'Helms', 'Lanterns', 'Talons', 'Scales', 'Spirals', 'Comets', 'Vines',
+    'Crystals', 'Mirrors', 'Bells', 'Horns', 'Cogs', 'Rays', 'Dust', 'Mists', 'Roses', 'Thorns',
+    'Paws', 'Hooves', 'Antlers', 'Shells', 'Fins', 'Roots', 'Stalks', 'Seeds', 'Pods', 'Stars2',
+    'Moons2', 'Crowns2', 'Leaves2', 'Suns2', 'Waves2', 'Shields2', 'Orbs2', 'Axes2', 'Spears2', 'Rings2'
+]
+base_ranks = [
+    '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A',
+    'Z', 'X', 'M', 'P', 'R', 'S', 'T', 'U', 'V', 'W', 'Y', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'L', 'N', 'O',
+    'AA', 'BB', 'CC', 'DD', 'EE', 'FF', 'GG', 'HH', 'II', 'JJ', 'KK', 'LL', 'MM', 'NN', 'OO', 'PP', 'QQ', 'RR', 'SS', 'TT',
+    '11', '12', '13', '14', '15', '16', '17', '18', '19', '20', '21', '22', '23', '24', '25', '26', '27', '28', '29', '30'
+]
+base_specials = {}
+
+# Upgradeable lists
+available_suits = base_suits.copy()
+available_ranks = base_ranks.copy()
+suits = [available_suits.pop(0)]  # Start with one suit
+ranks = [available_ranks.pop(0)]  # Start with one rank
+specials = base_specials.copy()
+
+# Track total and draw count
+total_count = 0
+draw_count = 1  # Number of cards drawn per click
+ace_multiplier = 1  # Multiplier for Ace effect
+shield_active = False
+
+# Percentages for drawing normal vs special cards
+NORMAL_CARD_CHANCE = 0.95  # 95% chance to draw a normal card
+SPECIAL_CARD_CHANCE = 0.05  # 5% chance to draw a special card
+
+# Percentages for each special card (must sum to 1.0)
+special_card_weights = {
+    'Joker': 0.10,
+    'Double': 0.10,
+    'Reset': 0.10,
+    'Bonus': 0.10,
+    'Triple': 0.05,
+    'Half': 0.10,
+    'Steal': 0.10,
+    'Gift': 0.10,
+    'Shield': 0.05,
+    'Bland': 0.20
+}
+
+# Helper to pick a special card by weighted chance
+def pick_special_card():
+    names = list(special_card_weights.keys())
+    weights = list(special_card_weights.values())
+    return random.choices(names, weights=weights, k=1)[0]
+
+def build_deck():
+    deck = []
+    for suit in suits:
+        for rank in ranks:
+            deck.append(f'{rank} of {suit}')
+    # Add special cards with lower frequency
+    for special in specials:
+        # Add each special card only once for rarity
+        deck.append(special)
+    random.shuffle(deck)
+    return deck
+
+deck = build_deck()
+
+# Card value lookup
+rank_values = {str(i): i for i in range(2, 11)}
+rank_values.update({'J': 11, 'Q': 12, 'K': 13, 'A': 14, '1': 1})
+
+# Special card abilities
+special_card_pool = [
+    ('Joker', lambda: joker_effect()),
+    ('Double', lambda: double_effect()),
+    ('Reset', lambda: reset_effect()),
+    ('Bonus', lambda: bonus_effect()),
+    ('Triple', lambda: triple_effect()),
+    ('Half', lambda: half_effect()),
+    ('Steal', lambda: steal_effect()),
+    ('Gift', lambda: gift_effect()),
+    ('Shield', lambda: shield_effect()),
+    ('Bland', lambda: bland_effect())
+]
+special_abilities = {
+    'Joker': lambda: joker_effect(),
+    'Double': lambda: double_effect(),
+    'Reset': lambda: reset_effect(),
+    'Bonus': lambda: bonus_effect(),
+    'Triple': lambda: triple_effect(),
+    'Half': lambda: half_effect(),
+    'Steal': lambda: steal_effect(),
+    'Gift': lambda: gift_effect(),
+    'Shield': lambda: shield_effect(),
+    'Bland': lambda: bland_effect()
+}
+
+# Special card effect implementations
+def joker_effect():
+    global total_count
+    total_count *= 2
+    return 'Joker! Total doubled.'
+
+def double_effect():
+    global total_count
+    total_count += 50
+    return 'Double! +50 to total.'
+
+def reset_effect():
+    global total_count, shield_active
+    if shield_active:
+        shield_active = False
+        return 'Reset blocked by Shield!'
+    total_count = 0
+    return 'Reset! Total set to 0.'
+
+def bonus_effect():
+    global total_count
+    total_count += 100
+    return 'Bonus! +100 to total.'
+
+def triple_effect():
+    global total_count
+    total_count *= 3
+    return 'Triple! Total tripled.'
+
+def half_effect():
+    global total_count
+    total_count = total_count // 2
+    return 'Half! Total halved.'
+
+def steal_effect():
+    global total_count
+    total_count += 200
+    return 'Steal! +200 to total.'
+
+def gift_effect():
+    global total_count
+    total_count += 500
+    return 'Gift! +500 to total.'
+
+def shield_effect():
+    global shield_active
+    shield_active = True
+    return 'Shield! Next Reset blocked.'
+
+def bland_effect():
+    global total_count
+    total_count -= 100
+    return 'Bland! -100 from total.'
+
+# Combo bonus tracking
+combo_history = []
+COMBO_SIZE = 3
+COMBO_BONUS = 100
+
+# Suit effects
+suit_effects = {
+    'Flames': lambda: flames_effect(),
+    'Frost': lambda: frost_effect(),
+    'Waves': lambda: waves_effect(),
+    'Stars': lambda: stars_effect(),
+    'Moons': lambda: moons_effect(),
+    'Crowns': lambda: crowns_effect(),
+    'Roots': lambda: roots_effect(),
+    'Echoes': lambda: echoes_effect(),
+    'Rings': lambda: rings_effect(),
+    'Masks': lambda: masks_effect(),
+}
+
+def flames_effect():
+    global total_count
+    total_count += 10
+    return '+10 bonus from Flames!'
+
+def frost_effect():
+    global next_upgrade_discount
+    next_upgrade_discount = 0.5
+    return 'Next upgrade cost halved by Frost!'
+
+def waves_effect():
+    global extra_draw_next
+    extra_draw_next = True
+    return 'Waves! Next draw gives an extra card.'
+
+def stars_effect():
+    global total_count
+    total_count += 25
+    return '+25 bonus from Stars!'
+
+def moons_effect():
+    global draw_count
+    draw_count += 1
+    return 'Moons! Draw +1 card next turn.'
+
+def crowns_effect():
+    global total_count
+    total_count += 50
+    return '+50 bonus from Crowns!'
+
+def roots_effect():
+    global total_count
+    total_count = int(total_count * 1.1)
+    return 'Roots! Total increased by 10%.'
+
+def echoes_effect():
+    global total_count
+    total_count += 5 * draw_count
+    return f'Echoes! +{5 * draw_count} bonus.'
+
+def rings_effect():
+    global total_count
+    total_count += 100
+    return '+100 bonus from Rings!'
+
+def masks_effect():
+    global total_count
+    total_count -= 25
+    return '-25 penalty from Masks!'
+
+next_upgrade_discount = 1.0
+extra_draw_next = False
+
+# Skill tree
+skills = {
+    'combo_multiplier': 1,
+    'upgrade_discount': 1.0,
+    'special_chance': 0.05,
+    # Add more skills as needed
+}
+
+def open_skill_tree():
+    skill_win = tk.Toplevel(root)
+    skill_win.title('Skill Tree')
+    skill_win.geometry('400x300')
+    ttk.Label(skill_win, text='Skill Tree', font=('Arial', 16)).pack(pady=10)
+    # Combo Multiplier
+    def upgrade_combo():
+        if spend_total(200):
+            skills['combo_multiplier'] += 1
+            combo_label.config(text=f'Combo Multiplier: x{skills["combo_multiplier"]}')
+    combo_label = ttk.Label(skill_win, text=f'Combo Multiplier: x{skills["combo_multiplier"]}')
+    combo_label.pack(pady=5)
+    ttk.Button(skill_win, text='Upgrade Combo Multiplier (200)', command=upgrade_combo).pack(pady=5)
+    # Upgrade Discount
+    def upgrade_discount():
+        if spend_total(200):
+            skills['upgrade_discount'] *= 0.9
+            discount_label.config(text=f'Upgrade Discount: {skills["upgrade_discount"]:.2f}x')
+    discount_label = ttk.Label(skill_win, text=f'Upgrade Discount: {skills["upgrade_discount"]:.2f}x')
+    discount_label.pack(pady=5)
+    ttk.Button(skill_win, text='Upgrade Discount (200)', command=upgrade_discount).pack(pady=5)
+    # Special Chance
+    def upgrade_special():
+        if spend_total(200):
+            skills['special_chance'] += 0.01
+            special_label.config(text=f'Special Card Chance: {skills["special_chance"]:.2f}')
+    special_label = ttk.Label(skill_win, text=f'Special Card Chance: {skills["special_chance"]:.2f}')
+    special_label.pack(pady=5)
+    ttk.Button(skill_win, text='Upgrade Special Chance (200)', command=upgrade_special).pack(pady=5)
+
+# Upgrade costs and levels
+BASE_COSTS = {
+    'suit': 10,
+    'rank': 10,
+    'special': 15,
+    'draw': 20
+}
+suit_upgrade_level = 0
+rank_upgrade_level = 0
+special_upgrade_level = 0
+draw_upgrade_level = 0
+
+# Helper to calculate cost
+def get_upgrade_cost(upgrade_type, level):
+    base = BASE_COSTS[upgrade_type]
+    # Exponential scaling: cost = base * (2 ** level) * discount
+    return int(base * (2 ** level) * skills.get('upgrade_discount', 1.0) * next_upgrade_discount)
+
+# Helper to update button text
+def update_upgrade_buttons():
+    add_suit_btn.config(text=f'Add Suit (Cost: {get_upgrade_cost("suit", suit_upgrade_level)}, Lv: {suit_upgrade_level})')
+    add_rank_btn.config(text=f'Add Rank (Cost: {get_upgrade_cost("rank", rank_upgrade_level)}, Lv: {rank_upgrade_level})')
+    add_special_btn.config(text=f'Add Special Card (Cost: {get_upgrade_cost("special", special_upgrade_level)}, Lv: {special_upgrade_level})')
+    upgrade_draw_btn.config(text=f'Upgrade Draw Count (Cost: {get_upgrade_cost("draw", draw_upgrade_level)}, Lv: {draw_upgrade_level})')
+
+# Upgrade functions
+def spend_total(cost):
+    global total_count
+    if total_count >= cost:
+        total_count -= cost
+        total_label.config(text=f'Total: {total_count}')
+        return True
+    else:
+        result_label.config(text=f'Not enough total! Need {cost}.')
+        return False
+
+def add_suit(_=None):
+    global suit_upgrade_level
+    cost = get_upgrade_cost('suit', suit_upgrade_level)
+    if available_suits and spend_total(cost):
+        new_suit = random.choice(available_suits)
+        available_suits.remove(new_suit)
+        suits.append(new_suit)
+        suit_upgrade_level += 1
+        rebuild_deck()
+        result_label.config(text=f'Suit {new_suit} added!')
+        update_upgrade_buttons()
+    elif not available_suits:
+        result_label.config(text='No more suits to unlock!')
+
+
+def add_rank(_=None):
+    global rank_upgrade_level
+    cost = get_upgrade_cost('rank', rank_upgrade_level)
+    if available_ranks and spend_total(cost):
+        new_rank = random.choice(available_ranks)
+        available_ranks.remove(new_rank)
+        ranks.append(new_rank)
+        # Assign a value for new ranks
+        try:
+            rank_values[new_rank] = int(new_rank)
+        except ValueError:
+            # Use face card values or default to 15 for unknowns
+            face_values = {'J': 11, 'Q': 12, 'K': 13, 'A': 14, 'Z': 15, 'X': 16, 'M': 17, 'P': 18, 'R': 19, 'S': 20}
+            rank_values[new_rank] = face_values.get(new_rank, 15)
+        rank_upgrade_level += 1
+        rebuild_deck()
+        result_label.config(text=f'Rank {new_rank} added!')
+        update_upgrade_buttons()
+    elif not available_ranks:
+        result_label.config(text='No more ranks to unlock!')
+
+def add_special_card():
+    global special_upgrade_level
+    cost = get_upgrade_cost('special', special_upgrade_level)
+    # Find available special cards not yet added
+    available_specials = [name for name, _ in special_card_pool if name not in specials]
+    if available_specials and spend_total(cost):
+        new_name = random.choice(available_specials)
+        # Find the effect function for the new special card
+        for name, func in special_card_pool:
+            if name == new_name:
+                specials[new_name] = func
+                special_abilities[new_name] = func
+                break
+        special_upgrade_level += 1
+        rebuild_deck()
+        result_label.config(text=f'Special card {new_name} added!')
+        update_upgrade_buttons()
+    elif not available_specials:
+        result_label.config(text='No more special cards to unlock!')
+
+def upgrade_draw_count():
+    global draw_count, draw_upgrade_level
+    cost = get_upgrade_cost('draw', draw_upgrade_level)
+    if spend_total(cost):
+        draw_count += 1
+        draw_upgrade_level += 1
+        draw_count_label.config(text=f'Cards per draw: {draw_count}')
+        result_label.config(text='Draw count upgraded!')
+        update_upgrade_buttons()
+
+def rebuild_deck():
+    global deck
+    deck = build_deck()
+
+# Move draw_card definition above GUI creation
+def draw_card():
+    global total_count, ace_multiplier, combo_history, next_upgrade_discount, extra_draw_next
+    drawn_cards = []
+    ace_count = 0
+    value_sum = 0
+    special_messages = []
+    combo_applied = False
+    draw_times = draw_count + (1 if extra_draw_next else 0)
+    extra_draw_next = False
+    for _ in range(draw_times):
+        if random.random() < (skills.get('special_chance', SPECIAL_CARD_CHANCE)) and specials:
+            # Draw a special card by weighted chance
+            special_name = pick_special_card()
+            if special_name in specials:
+                drawn_cards.append(special_name)
+                msg = special_abilities[special_name]()
+                special_messages.append(msg)
+            else:
+                card = random.choice([f'{rank} of {suit}' for suit in suits for rank in ranks])
+                drawn_cards.append(card)
+                rank = card.split(' ')[0]
+                if rank == 'A':
+                    ace_count += 1
+                if rank in rank_values:
+                    value_sum += rank_values[rank]
+        elif deck:
+            card = random.choice([f'{rank} of {suit}' for suit in suits for rank in ranks])
+            drawn_cards.append(card)
+            rank = card.split(' ')[0]
+            suit = card.split(' ')[-1]
+            if rank == 'A':
+                ace_count += 1
+            if rank in rank_values:
+                value_sum += rank_values[rank]
+            # Suit effects
+            if suit in suit_effects:
+                msg = suit_effects[suit]()
+                special_messages.append(msg)
+        else:
+            break
+    ace_multiplier = 2 ** ace_count if ace_count > 0 else 1
+    total_count += value_sum * ace_multiplier
+    # Combo bonus check
+    combo_history.extend(drawn_cards)
+    if len(combo_history) >= COMBO_SIZE:
+        last_combo = combo_history[-COMBO_SIZE:]
+        # Example: all same suit
+        suits_in_combo = [c.split(' ')[-1] for c in last_combo if ' ' in c]
+        if len(set(suits_in_combo)) == 1 and len(suits_in_combo) == COMBO_SIZE:
+            bonus = COMBO_BONUS * skills['combo_multiplier']
+            total_count += bonus
+            special_messages.append(f'Combo! {COMBO_SIZE} {suits_in_combo[0]} cards: +{bonus}')
+            combo_applied = True
+        # Example: consecutive ranks (for numeric ranks only)
+        ranks_in_combo = [c.split(' ')[0] for c in last_combo if c.split(' ')[0].isdigit()]
+        if len(ranks_in_combo) == COMBO_SIZE:
+            sorted_ranks = sorted(map(int, ranks_in_combo))
+            if sorted_ranks == list(range(sorted_ranks[0], sorted_ranks[0] + COMBO_SIZE)):
+                bonus = COMBO_BONUS * skills['combo_multiplier']
+                total_count += bonus
+                special_messages.append(f'Combo! {COMBO_SIZE} consecutive ranks: +{bonus}')
+                combo_applied = True
+        # Remove oldest if combo applied
+        if combo_applied:
+            combo_history = []
+        else:
+            combo_history = combo_history[-COMBO_SIZE:]
+    result_text = f"Drawn cards: {', '.join(drawn_cards)}"
+    if ace_count > 0:
+        result_text += f"\n{ace_count} Ace(s) drawn! Total multiplied by {ace_multiplier}."
+    if special_messages:
+        result_text += "\n" + "\n".join(special_messages)
+    result_label.config(text=result_text)
+    total_label.config(text=f'Total: {total_count}')
+    next_upgrade_discount = 1.0
+    random.shuffle(deck)
+
+# Tkinter GUI setup
+root = tk.Tk()
+root.title('Card Game')
+root.attributes('-fullscreen', True)
+root.overrideredirect(True)  # Remove default title bar
+
+# Custom title bar
+bar_height = 40
+bar_bg = '#222'
+bar_fg = '#fff'
+title_bar = ttk.Frame(root, height=bar_height)
+title_bar.place(x=0, y=0, relwidth=1)
+title_bar.configure(style='TitleBar.TFrame')
+
+style = ttk.Style()
+style.configure('TitleBar.TFrame', background=bar_bg)
+style.configure('TitleBar.TLabel', background=bar_bg, foreground=bar_fg, font=('Arial', 14, 'bold'))
+style.configure('TitleBar.TButton', background=bar_bg, foreground=bar_fg)
+
+# Title label
+title_label = ttk.Label(title_bar, text='Card Game', style='TitleBar.TLabel')
+title_label.pack(side='left', padx=10)
+
+# Clock label
+clock_label = ttk.Label(title_bar, style='TitleBar.TLabel')
+clock_label.pack(side='right', padx=10)
+
+# Add skill tree button to title bar (move here to fix NameError)
+skill_btn = ttk.Button(title_bar, text='Skill Tree', style='TitleBar.TButton', command=open_skill_tree)
+skill_btn.pack(side='right', padx=5)
+
+def update_clock():
+    now = time.strftime('%H:%M:%S')
+    clock_label.config(text=now)
+    root.after(1000, update_clock)
+update_clock()
+
+# Minimize and close buttons
+btn_frame = ttk.Frame(title_bar, style='TitleBar.TFrame')
+btn_frame.pack(side='right', padx=5)
+
+def minimize():
+    root.iconify()
+
+def close():
+    root.destroy()
+
+min_btn = ttk.Button(btn_frame, text='_', width=3, command=minimize, style='TitleBar.TButton')
+min_btn.pack(side='left', padx=2)
+close_btn = ttk.Button(btn_frame, text='X', width=3, command=close, style='TitleBar.TButton')
+close_btn.pack(side='left', padx=2)
+
+# Move window by dragging title bar
+_drag_data = {'x': 0, 'y': 0}
+def start_move(event):
+    _drag_data['x'] = event.x
+    _drag_data['y'] = event.y
+def do_move(event):
+    x = root.winfo_x() + event.x - _drag_data['x']
+    y = root.winfo_y() + event.y - _drag_data['y']
+    root.geometry(f'+{x}+{y}')
+title_bar.bind('<Button-1>', start_move)
+title_bar.bind('<B1-Motion>', do_move)
+
+result_label = ttk.Label(root, text='Click to draw a card', font=('Arial', 14))
+result_label.pack(pady=10)
+
+total_label = ttk.Label(root, text='Total: 0', font=('Arial', 12))
+total_label.pack(pady=5)
+
+draw_count_label = ttk.Label(root, text=f'Cards per draw: {draw_count}', font=('Arial', 12))
+draw_count_label.pack(pady=5)
+
+draw_button = ttk.Button(root, text='Draw Card(s)', command=draw_card)
+draw_button.pack(pady=10)
+
+# Example upgrade buttons (add more as needed)
+upgrade_frame = ttk.Frame(root)
+upgrade_frame.pack(pady=10)
+
+add_suit_btn = ttk.Button(upgrade_frame, command=add_suit)
+add_suit_btn.pack(side='left', padx=5)
+
+add_rank_btn = ttk.Button(upgrade_frame, command=add_rank)
+add_rank_btn.pack(side='left', padx=5)
+
+add_special_btn = ttk.Button(upgrade_frame, command=add_special_card)
+add_special_btn.pack(side='left', padx=5)
+
+upgrade_draw_btn = ttk.Button(upgrade_frame, command=upgrade_draw_count)
+upgrade_draw_btn.pack(side='left', padx=5)
+
+update_upgrade_buttons()
+
+sv_ttk.set_theme("dark")
+
+root.mainloop()
