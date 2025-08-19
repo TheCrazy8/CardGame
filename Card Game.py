@@ -7,6 +7,7 @@ import sv_ttk
 import json
 import os
 import sys
+from PIL import Image, ImageTk
 
 # Card deck and upgrade system
 base_suits = [
@@ -377,6 +378,55 @@ def rebuild_deck():
     global deck
     deck = build_deck()
 
+# Card image cache
+card_images = {}
+IMAGE_DIR = os.path.join(os.path.dirname(__file__), 'images')
+CARD_IMAGE_SIZE = (120, 180)
+
+# Helper to get image directory compatible with PyInstaller
+def get_image_dir():
+    if hasattr(sys, '_MEIPASS'):
+        # PyInstaller: images bundled in _MEIPASS/images
+        return os.path.join(sys._MEIPASS, 'images')
+    else:
+        # Normal: images in script directory
+        return os.path.join(os.path.dirname(__file__), 'images')
+
+IMAGE_DIR = get_image_dir()
+
+# Helper to get image filename for a card
+def get_card_image_filename(card_name):
+    card_name = card_name.replace(' ', '').replace('of', '_').replace('Hearts', 'heart').replace('Diamonds', 'diamond').replace('Clubs', 'club').replace('Spades', 'spade')
+    card_name = card_name.lower()
+    return os.path.join(IMAGE_DIR, f'{card_name}.png')
+
+# Helper to load image (with cache)
+def load_card_image(card_name):
+    filename = get_card_image_filename(card_name)
+    if filename in card_images:
+        return card_images[filename]
+    try:
+        img = Image.open(filename).resize(CARD_IMAGE_SIZE)
+        photo = ImageTk.PhotoImage(img)
+        card_images[filename] = photo
+        return photo
+    except Exception:
+        # Fallback: blank image
+        img = Image.new('RGBA', CARD_IMAGE_SIZE, (128,128,128,255))
+        photo = ImageTk.PhotoImage(img)
+        card_images[filename] = photo
+        return photo
+
+# Tkinter GUI setup
+root = tk.Tk()
+root.title('Card Game')
+root.attributes('-fullscreen', True)
+root.overrideredirect(True)  # Remove default title bar
+
+# Add card image label to GUI (move after root is defined)
+card_image_label = ttk.Label(root)
+card_image_label.pack(pady=10)
+
 # Move draw_card definition above GUI creation
 def draw_card():
     global total_count, ace_multiplier, combo_history, next_upgrade_discount, extra_draw_next
@@ -387,6 +437,7 @@ def draw_card():
     combo_applied = False
     draw_times = draw_count + (1 if extra_draw_next else 0)
     extra_draw_next = False
+    last_drawn = None
     for _ in range(draw_times):
         if random.random() < (skills.get('special_chance', SPECIAL_CARD_CHANCE)) and specials:
             # Draw a special card by weighted chance
@@ -395,6 +446,7 @@ def draw_card():
                 drawn_cards.append(special_name)
                 msg = special_abilities[special_name]()
                 special_messages.append(msg)
+                last_drawn = special_name
             else:
                 card = random.choice([f'{rank} of {suit}' for suit in suits for rank in ranks])
                 drawn_cards.append(card)
@@ -403,6 +455,7 @@ def draw_card():
                     ace_count += 1
                 if rank in rank_values:
                     value_sum += rank_values[rank]
+                last_drawn = card
         elif deck:
             card = random.choice([f'{rank} of {suit}' for suit in suits for rank in ranks])
             drawn_cards.append(card)
@@ -416,6 +469,7 @@ def draw_card():
             if suit in suit_effects:
                 msg = suit_effects[suit]()
                 special_messages.append(msg)
+            last_drawn = card
         else:
             break
     ace_multiplier = 2 ** ace_count if ace_count > 0 else 1
@@ -454,6 +508,11 @@ def draw_card():
     total_label.config(text=f'Total: {total_count}')
     next_upgrade_discount = 1.0
     random.shuffle(deck)
+    # Show image for last drawn card
+    if last_drawn:
+        img = load_card_image(last_drawn)
+        card_image_label.config(image=img)
+        card_image_label.image = img
 
 # Helper to get save path compatible with PyInstaller
 def get_save_path():
@@ -535,12 +594,6 @@ def reset_save():
     total_label.config(text='Total: 0')
     draw_count_label.config(text='Cards per draw: 1')
     result_label.config(text='Progress reset!')
-
-# Tkinter GUI setup
-root = tk.Tk()
-root.title('Card Game')
-root.attributes('-fullscreen', True)
-root.overrideredirect(True)  # Remove default title bar
 
 # Custom title bar
 bar_height = 40
