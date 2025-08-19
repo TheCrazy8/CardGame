@@ -4,6 +4,9 @@ import random
 import tkinter as tk
 from tkinter import ttk
 import sv_ttk
+import json
+import os
+import sys
 
 # Card deck and upgrade system
 base_suits = [
@@ -452,6 +455,87 @@ def draw_card():
     next_upgrade_discount = 1.0
     random.shuffle(deck)
 
+# Helper to get save path compatible with PyInstaller
+def get_save_path():
+    if hasattr(sys, '_MEIPASS'):
+        # PyInstaller: save in user home directory
+        return os.path.join(os.path.expanduser('~'), 'card_game_save.json')
+    else:
+        # Normal: save in current directory
+        return SAVE_FILE
+
+SAVE_FILE = 'card_game_save.json'
+
+# Update save/load functions to use get_save_path()
+def save_progress():
+    data = {
+        'total_count': total_count,
+        'draw_count': draw_count,
+        'ace_multiplier': ace_multiplier,
+        'shield_active': shield_active,
+        'suit_upgrade_level': suit_upgrade_level,
+        'rank_upgrade_level': rank_upgrade_level,
+        'special_upgrade_level': special_upgrade_level,
+        'draw_upgrade_level': draw_upgrade_level,
+        'suits': suits,
+        'ranks': ranks,
+        'specials': list(specials.keys()),
+        'skills': skills,
+    }
+    with open(get_save_path(), 'w') as f:
+        json.dump(data, f)
+
+def load_progress():
+    global total_count, draw_count, ace_multiplier, shield_active
+    global suit_upgrade_level, rank_upgrade_level, special_upgrade_level, draw_upgrade_level
+    global suits, ranks, specials, skills
+    path = get_save_path()
+    if os.path.exists(path):
+        with open(path, 'r') as f:
+            data = json.load(f)
+        total_count = data.get('total_count', 0)
+        draw_count = data.get('draw_count', 1)
+        ace_multiplier = data.get('ace_multiplier', 1)
+        shield_active = data.get('shield_active', False)
+        suit_upgrade_level = data.get('suit_upgrade_level', 0)
+        rank_upgrade_level = data.get('rank_upgrade_level', 0)
+        special_upgrade_level = data.get('special_upgrade_level', 0)
+        draw_upgrade_level = data.get('draw_upgrade_level', 0)
+        suits = data.get('suits', [base_suits[0]])
+        ranks = data.get('ranks', [base_ranks[0]])
+        specials = {name: special_abilities[name] for name in data.get('specials', []) if name in special_abilities}
+        skills.update(data.get('skills', {}))
+        rebuild_deck()
+
+def reset_save():
+    if os.path.exists(get_save_path()):
+        os.remove(get_save_path())
+    # Reset game state to defaults
+    global total_count, draw_count, ace_multiplier, shield_active
+    global suit_upgrade_level, rank_upgrade_level, special_upgrade_level, draw_upgrade_level
+    global suits, ranks, specials, skills
+    total_count = 0
+    draw_count = 1
+    ace_multiplier = 1
+    shield_active = False
+    suit_upgrade_level = 0
+    rank_upgrade_level = 0
+    special_upgrade_level = 0
+    draw_upgrade_level = 0
+    suits = [base_suits[0]]
+    ranks = [base_ranks[0]]
+    specials = {}
+    skills = {
+        'combo_multiplier': 1,
+        'upgrade_discount': 1.0,
+        'special_chance': 0.05,
+    }
+    rebuild_deck()
+    update_upgrade_buttons()
+    total_label.config(text='Total: 0')
+    draw_count_label.config(text='Cards per draw: 1')
+    result_label.config(text='Progress reset!')
+
 # Tkinter GUI setup
 root = tk.Tk()
 root.title('Card Game')
@@ -546,6 +630,49 @@ upgrade_draw_btn.pack(side='left', padx=5)
 
 update_upgrade_buttons()
 
+# Add save/load buttons to title bar
+save_btn = ttk.Button(title_bar, text='Save', style='TitleBar.TButton', command=save_progress)
+save_btn.pack(side='right', padx=5)
+load_btn = ttk.Button(title_bar, text='Load', style='TitleBar.TButton', command=load_progress)
+load_btn.pack(side='right', padx=5)
+
+# Add reset button to title bar
+reset_btn = ttk.Button(title_bar, text='Reset', style='TitleBar.TButton', command=reset_save)
+reset_btn.pack(side='right', padx=5)
+
 sv_ttk.set_theme("dark")
+
+# Load progress on startup
+load_progress()
+
+# Autosave interval in milliseconds
+AUTOSAVE_INTERVAL = 60000  # 60 seconds
+
+def autosave():
+    save_progress()
+    result_label.config(text='Autosave successful!')
+    root.after(AUTOSAVE_INTERVAL, autosave)
+
+# Start autosave loop after GUI is initialized
+root.after(AUTOSAVE_INTERVAL, autosave)
+
+SPACEBAR_COOLDOWN = 1000  # milliseconds
+spacebar_ready = True
+
+def spacebar_cooldown():
+    global spacebar_ready
+    spacebar_ready = True
+    result_label.config(text='Spacebar ready!')
+
+def on_spacebar(event):
+    global spacebar_ready
+    if spacebar_ready:
+        draw_card()
+        spacebar_ready = False
+        root.after(SPACEBAR_COOLDOWN, spacebar_cooldown)
+    else:
+        result_label.config(text='Spacebar on cooldown!')
+
+root.bind('<space>', on_spacebar)
 
 root.mainloop()
