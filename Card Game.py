@@ -272,6 +272,39 @@ def open_skill_tree():
     special_label.pack(pady=5)
     ttk.Button(skill_win, text='Upgrade Special Chance (200)', command=upgrade_special).pack(pady=5)
 
+    # Skill: Faster Autosave
+    if 'autosave_speed' not in skills:
+        skills['autosave_speed'] = 60000  # default 60s
+    def upgrade_autosave():
+        if spend_total(300) and skills['autosave_speed'] > 10000:
+            skills['autosave_speed'] = max(10000, skills['autosave_speed'] - 10000)
+            autosave_label.config(text=f'Autosave Interval: {skills["autosave_speed"]//1000}s')
+    autosave_label = ttk.Label(skill_win, text=f'Autosave Interval: {skills["autosave_speed"]//1000}s')
+    autosave_label.pack(pady=5)
+    ttk.Button(skill_win, text='Upgrade Autosave Speed (300)', command=upgrade_autosave).pack(pady=5)
+
+    # Skill: Increase Combo Size
+    if 'combo_size' not in skills:
+        skills['combo_size'] = 3
+    def upgrade_combo_size():
+        if spend_total(400):
+            skills['combo_size'] += 1
+            combo_size_label.config(text=f'Combo Size: {skills["combo_size"]}')
+    combo_size_label = ttk.Label(skill_win, text=f'Combo Size: {skills["combo_size"]}')
+    combo_size_label.pack(pady=5)
+    ttk.Button(skill_win, text='Increase Combo Size (400)', command=upgrade_combo_size).pack(pady=5)
+
+    # Skill: Suit Bonus (example for Hearts)
+    if 'hearts_bonus' not in skills:
+        skills['hearts_bonus'] = 0
+    def upgrade_hearts_bonus():
+        if spend_total(250):
+            skills['hearts_bonus'] += 5
+            hearts_bonus_label.config(text=f'Hearts Bonus: +{skills["hearts_bonus"]}')
+    hearts_bonus_label = ttk.Label(skill_win, text=f'Hearts Bonus: +{skills["hearts_bonus"]}')
+    hearts_bonus_label.pack(pady=5)
+    ttk.Button(skill_win, text='Upgrade Hearts Bonus (250)', command=upgrade_hearts_bonus).pack(pady=5)
+
 # Upgrade costs and levels
 BASE_COSTS = {
     'suit': 10,
@@ -427,6 +460,32 @@ root.overrideredirect(True)  # Remove default title bar
 card_image_label = ttk.Label(root)
 card_image_label.pack(pady=10)
 
+# Card Art Gallery window
+def open_card_gallery():
+    gallery_win = tk.Toplevel(root)
+    gallery_win.title('Card Art Gallery')
+    gallery_win.geometry('800x600')
+    ttk.Label(gallery_win, text='Card Art Gallery', font=('Arial', 16)).pack(pady=10)
+    canvas = tk.Canvas(gallery_win, width=760, height=500)
+    canvas.pack()
+    scrollbar = ttk.Scrollbar(gallery_win, orient='vertical', command=canvas.yview)
+    scrollbar.pack(side='right', fill='y')
+    canvas.configure(yscrollcommand=scrollbar.set)
+    frame = ttk.Frame(canvas)
+    canvas.create_window((0,0), window=frame, anchor='nw')
+    # Gather all unlocked cards
+    unlocked_cards = [f'{rank} of {suit}' for suit in suits for rank in ranks] + list(specials.keys())
+    # Display images in a grid
+    cols = 5
+    for idx, card in enumerate(unlocked_cards):
+        img = load_card_image(card)
+        lbl = ttk.Label(frame, image=img)
+        lbl.image = img
+        lbl.grid(row=idx//cols*2, column=idx%cols, padx=10, pady=10)
+        ttk.Label(frame, text=card, font=('Arial', 10)).grid(row=idx//cols*2+1, column=idx%cols, padx=10)
+    frame.update_idletasks()
+    canvas.config(scrollregion=canvas.bbox('all'))
+
 # Move draw_card definition above GUI creation
 def draw_card():
     global total_count, ace_multiplier, combo_history, next_upgrade_discount, extra_draw_next
@@ -469,12 +528,17 @@ def draw_card():
             if suit in suit_effects:
                 msg = suit_effects[suit]()
                 special_messages.append(msg)
+            # Skill: Hearts bonus
+            if suit == 'Hearts' and skills.get('hearts_bonus', 0) > 0:
+                total_count += skills['hearts_bonus']
+                special_messages.append(f'Hearts bonus! +{skills["hearts_bonus"]}')
             last_drawn = card
         else:
             break
     ace_multiplier = 2 ** ace_count if ace_count > 0 else 1
     total_count += value_sum * ace_multiplier
     # Combo bonus check
+    COMBO_SIZE = skills.get('combo_size', 3)
     combo_history.extend(drawn_cards)
     if len(combo_history) >= COMBO_SIZE:
         last_combo = combo_history[-COMBO_SIZE:]
@@ -612,6 +676,10 @@ style.configure('TitleBar.TButton', background=bar_bg, foreground=bar_fg)
 title_label = ttk.Label(title_bar, text='Card Game', style='TitleBar.TLabel')
 title_label.pack(side='left', padx=10)
 
+# Add Card Gallery button to title bar
+gallery_btn = ttk.Button(title_bar, text='Card Gallery', style='TitleBar.TButton', command=open_card_gallery)
+gallery_btn.pack(side='right', padx=5)
+
 # Clock label
 clock_label = ttk.Label(title_bar, style='TitleBar.TLabel')
 clock_label.pack(side='right', padx=10)
@@ -699,12 +767,16 @@ sv_ttk.set_theme("dark")
 load_progress()
 
 # Autosave interval in milliseconds
-AUTOSAVE_INTERVAL = 60000  # 60 seconds
+
+# Use skill for autosave interval
+AUTOSAVE_INTERVAL = skills.get('autosave_speed', 60000)
 
 def autosave():
     save_progress()
     result_label.config(text='Autosave successful!')
-    root.after(AUTOSAVE_INTERVAL, autosave)
+    # Update interval from skill
+    interval = skills.get('autosave_speed', 60000)
+    root.after(interval, autosave)
 
 # Start autosave loop after GUI is initialized
 root.after(AUTOSAVE_INTERVAL, autosave)
