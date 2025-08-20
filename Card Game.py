@@ -696,9 +696,8 @@ def draw_card():
                 # ('color_combo', prefix, color_name, color_hex, suffix)
                 prefix, color_name, color_hex, suffix = msg[1], msg[2], msg[3], msg[4]
                 text_widget.insert(tk.END, prefix)
-                tag_name = f"color_combo_{color_hex}"
-                text_widget.insert(tk.END, color_name, tag_name)
-                text_widget.tag_config(tag_name, foreground=color_hex)
+                text_widget.insert(tk.END, color_name, color)
+                text_widget.tag_config(color_name, foreground=color_hex)
                 text_widget.insert(tk.END, suffix + "\n")
             else:
                 text_widget.insert(tk.END, msg + "\n", 'special')
