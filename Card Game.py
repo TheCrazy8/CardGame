@@ -670,11 +670,6 @@ def draw_card():
 
     # Build a string with each card on a new line
     result_text = "Drawn cards:\n" + "\n".join([f"{card}" for card in drawn_cards])
-    if ace_count > 0:
-        result_text += f"\n{ace_count} Ace(s) drawn! Total multiplied by {ace_multiplier}."
-    if special_messages:
-        result_text += "\n" + "\n".join(special_messages)
-
     # Use tk.Text widget for colored text
     if not hasattr(root, 'result_text_widget'):
         root.result_text_widget = tk.Text(root, height=8, width=60, font=('Arial', 14), bg=root.cget('bg'), bd=0, highlightthickness=0)
@@ -687,14 +682,14 @@ def draw_card():
     for card, suit, color in drawn_cards_colored:
         text_widget.insert(tk.END, f"{card}\n", ('card', color))
         text_widget.tag_config('card', foreground=color)
-    # Add ace and special messages
+    # Add ace message
     if ace_count > 0:
         text_widget.insert(tk.END, f"{ace_count} Ace(s) drawn! Total multiplied by {ace_multiplier}.\n", 'ace')
         text_widget.tag_config('ace', foreground='#FFD700')
-    if special_messages:
-        for msg in special_messages:
-            text_widget.insert(tk.END, msg + "\n", 'special')
-        text_widget.tag_config('special', foreground='#FFFFFF')
+    # Add each special message on its own line
+    for msg in special_messages:
+        text_widget.insert(tk.END, msg + "\n", 'special')
+    text_widget.tag_config('special', foreground='#FFFFFF')
     text_widget.config(state='disabled')
 
     total_label.config(text=f'Total: {total_count}')
