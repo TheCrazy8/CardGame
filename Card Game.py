@@ -646,10 +646,7 @@ def draw_card():
     drawn_cards_colored = []
     for card in drawn_cards:
         color = get_card_color(card)
-        # Use Tkinter's font tag for color in Label (requires using a Text widget)
-        # Instead, build HTML-like string for ttk.Label (not natively supported, but can use tk.Label)
-        drawn_cards_colored.append(f"\u2022 ")  # bullet
-        drawn_cards_colored.append(f"{{{card}}}")  # placeholder for color
+        drawn_cards_colored.append((card, color))
 
     # Build a string with each card on a new line
     result_text = "Drawn cards:\n" + "\n".join([f"{card}" for card in drawn_cards])
@@ -667,13 +664,15 @@ def draw_card():
     text_widget.config(state='normal')
     text_widget.delete('1.0', tk.END)
     text_widget.insert(tk.END, "Drawn cards:\n")
-    for card in drawn_cards:
-        color = get_card_color(card)
+    for card, color in drawn_cards_colored:
         # Create a unique tag for each card line to avoid tag conflicts
         tag_name = f"card_{card}_{random.randint(0,999999)}"
         text_widget.insert(tk.END, f"{card}\n", tag_name)
-        # Only apply color if not default white
-        text_widget.tag_config(tag_name, foreground=color)
+        # Use suit color for normal cards, gold for specials, fallback to gray for unknown
+        if color:
+            text_widget.tag_config(tag_name, foreground=color)
+        else:
+            text_widget.tag_config(tag_name, foreground="#CCCCCC")
     # Add ace and special messages
     if ace_count > 0:
         text_widget.insert(tk.END, f"{ace_count} Ace(s) drawn! Total multiplied by {ace_multiplier}.\n", 'ace')
