@@ -742,12 +742,53 @@ def draw_card():
             combo_history = []
         else:
             combo_history = combo_history[-COMBO_SIZE:]
-    result_text = f"Drawn cards: {', '.join(drawn_cards)}"
+    # Build colored text for drawn cards
+    def get_card_color(card):
+        if card in specials:
+            return '#FFFFFF'  # Special cards: white
+        if ' of ' in card:
+            suit = card.split(' of ')[-1]
+            return suit_colors.get(suit, '#FFFFFF')
+        return '#FFFFFF'
+
+    drawn_cards_colored = []
+    for card in drawn_cards:
+        color = get_card_color(card)
+        # Use Tkinter's font tag for color in Label (requires using a Text widget)
+        # Instead, build HTML-like string for ttk.Label (not natively supported, but can use tk.Label)
+        drawn_cards_colored.append(f"\u2022 ")  # bullet
+        drawn_cards_colored.append(f"{{{card}}}")  # placeholder for color
+
+    # Build a string with each card on a new line
+    result_text = "Drawn cards:\n" + "\n".join([f"{card}" for card in drawn_cards])
     if ace_count > 0:
         result_text += f"\n{ace_count} Ace(s) drawn! Total multiplied by {ace_multiplier}."
     if special_messages:
         result_text += "\n" + "\n".join(special_messages)
-    result_label.config(text=result_text)
+
+    # Use tk.Text widget for colored text
+    if not hasattr(root, 'result_text_widget'):
+        root.result_text_widget = tk.Text(root, height=8, width=60, font=('Arial', 14), bg=root.cget('bg'), bd=0, highlightthickness=0)
+        root.result_text_widget.pack(pady=10)
+        result_label.pack_forget()
+    text_widget = root.result_text_widget
+    text_widget.config(state='normal')
+    text_widget.delete('1.0', tk.END)
+    text_widget.insert(tk.END, "Drawn cards:\n")
+    for card in drawn_cards:
+        color = get_card_color(card)
+        text_widget.insert(tk.END, f"{card}\n", card)
+        text_widget.tag_config(card, foreground=color)
+    # Add ace and special messages
+    if ace_count > 0:
+        text_widget.insert(tk.END, f"{ace_count} Ace(s) drawn! Total multiplied by {ace_multiplier}.\n", 'ace')
+        text_widget.tag_config('ace', foreground='#FFD700')
+    if special_messages:
+        for msg in special_messages:
+            text_widget.insert(tk.END, msg + "\n", 'special')
+        text_widget.tag_config('special', foreground='#FFFFFF')
+    text_widget.config(state='disabled')
+
     total_label.config(text=f'Total: {total_count}')
     next_upgrade_discount = 1.0
     random.shuffle(deck)
