@@ -367,7 +367,7 @@ def add_suit(_=None):
         suits.append(new_suit)
         suit_upgrade_level += 1
         rebuild_deck()
-        result_label.config(text=f'Suit {new_suit} added!')
+        result_label.config(text=f'Upgrade: Suit added!\nNew suit: {new_suit}\nTotal suits: {len(suits)}\nNext suit cost: {get_upgrade_cost("suit", suit_upgrade_level)}')
         update_upgrade_buttons()
     elif not available_suits:
         result_label.config(text='No more suits to unlock!')
@@ -383,13 +383,14 @@ def add_rank(_=None):
         # Assign a value for new ranks
         try:
             rank_values[new_rank] = int(new_rank)
+            value_text = f"Value: {int(new_rank)}"
         except ValueError:
-            # Use face card values or default to 15 for unknowns
             face_values = {'J': 11, 'Q': 12, 'K': 13, 'A': 14, 'Z': 15, 'X': 16, 'M': 17, 'P': 18, 'R': 19, 'S': 20}
             rank_values[new_rank] = face_values.get(new_rank, 15)
+            value_text = f"Value: {rank_values[new_rank]}"
         rank_upgrade_level += 1
         rebuild_deck()
-        result_label.config(text=f'Rank {new_rank} added!')
+        result_label.config(text=f'Upgrade: Rank added!\nNew rank: {new_rank} ({value_text})\nTotal ranks: {len(ranks)}\nNext rank cost: {get_upgrade_cost("rank", rank_upgrade_level)}')
         update_upgrade_buttons()
     elif not available_ranks:
         result_label.config(text='No more ranks to unlock!')
@@ -401,7 +402,6 @@ def add_special_card():
     available_specials = [name for name, _ in special_card_pool if name not in specials]
     if available_specials and spend_total(cost):
         new_name = random.choice(available_specials)
-        # Find the effect function for the new special card
         for name, func in special_card_pool:
             if name == new_name:
                 specials[new_name] = func
@@ -409,7 +409,7 @@ def add_special_card():
                 break
         special_upgrade_level += 1
         rebuild_deck()
-        result_label.config(text=f'Special card {new_name} added!')
+        result_label.config(text=f'Upgrade: Special card added!\nNew special: {new_name}\nTotal specials: {len(specials)}\nNext special cost: {get_upgrade_cost("special", special_upgrade_level)}')
         update_upgrade_buttons()
     elif not available_specials:
         result_label.config(text='No more special cards to unlock!')
@@ -418,10 +418,11 @@ def upgrade_draw_count():
     global draw_count, draw_upgrade_level
     cost = get_upgrade_cost('draw', draw_upgrade_level)
     if spend_total(cost):
+        prev_draw = draw_count
         draw_count += 1
         draw_upgrade_level += 1
         draw_count_label.config(text=f'Cards per draw: {draw_count}')
-        result_label.config(text='Draw count upgraded!')
+        result_label.config(text=f'Upgrade: Draw count increased!\nPrevious: {prev_draw}\nNow: {draw_count}\nNext draw cost: {get_upgrade_cost("draw", draw_upgrade_level)}')
         update_upgrade_buttons()
 
 def rebuild_deck():
@@ -784,25 +785,36 @@ style.configure('TitleBar.TFrame', background=bar_bg)
 style.configure('TitleBar.TLabel', background=bar_bg, foreground=bar_fg, font=('Arial', 14, 'bold'))
 style.configure('TitleBar.TButton', background=bar_bg, foreground=bar_fg)
 
+gallery_btn = ttk.Button(title_bar, text='Card Gallery', style='TitleBar.TButton', command=open_card_gallery)
+gallery_btn.pack(side='right', padx=5)
+
 # Title label
 title_label = ttk.Label(title_bar, text='Card Game', style='TitleBar.TLabel')
 title_label.pack(side='left', padx=10)
 
 # Add Card Gallery button to title bar
 gallery_btn = ttk.Button(title_bar, text='Card Gallery', style='TitleBar.TButton', command=open_card_gallery)
-gallery_btn.pack(side='right', padx=5)
+gallery_btn.pack(side='left', padx=5)
 
 # Leaderboard button
 leaderboard_btn = ttk.Button(title_bar, text='Leaderboard', style='TitleBar.TButton', command=open_leaderboard)
-leaderboard_btn.pack(side='right', padx=5)
+leaderboard_btn.pack(side='left', padx=5)
 
-# Clock label
+# Add skill tree button to title bar
+skill_btn = ttk.Button(title_bar, text='Skill Tree', style='TitleBar.TButton', command=open_skill_tree)
+skill_btn.pack(side='left', padx=5)
+
+# Add save/load/reset buttons to title bar
+save_btn = ttk.Button(title_bar, text='Save', style='TitleBar.TButton', command=save_progress)
+save_btn.pack(side='left', padx=5)
+load_btn = ttk.Button(title_bar, text='Load', style='TitleBar.TButton', command=load_progress)
+load_btn.pack(side='left', padx=5)
+reset_btn = ttk.Button(title_bar, text='Reset', style='TitleBar.TButton', command=reset_save)
+reset_btn.pack(side='left', padx=5)
+
+# Clock label (rightmost)
 clock_label = ttk.Label(title_bar, style='TitleBar.TLabel')
 clock_label.pack(side='right', padx=10)
-
-# Add skill tree button to title bar (move here to fix NameError)
-skill_btn = ttk.Button(title_bar, text='Skill Tree', style='TitleBar.TButton', command=open_skill_tree)
-skill_btn.pack(side='right', padx=5)
 
 def update_clock():
     now = time.strftime('%H:%M:%S')
@@ -810,7 +822,7 @@ def update_clock():
     root.after(1000, update_clock)
 update_clock()
 
-# Minimize and close buttons
+# Minimize and close buttons (rightmost)
 btn_frame = ttk.Frame(title_bar, style='TitleBar.TFrame')
 btn_frame.pack(side='right', padx=5)
 
