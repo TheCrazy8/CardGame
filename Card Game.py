@@ -618,7 +618,8 @@ def draw_card():
             color_bonus = COLOR_COMBO_BONUS * skills['combo_multiplier']
             total_count += color_bonus
             color_name = hex_to_name(colors_in_combo[0])
-            special_messages.append(f'Color Combo! {COMBO_SIZE} {color_name} cards: +{color_bonus}')
+            # Store color info for later coloring in Text widget
+            special_messages.append(('color_combo', f'Color Combo! {COMBO_SIZE} ', color_name, colors_in_combo[0], f' cards: +{color_bonus}'))
             combo_applied = True
         # Consecutive ranks (for numeric ranks only)
         ranks_in_combo = [c.split(' ')[0] for c in last_combo if c.split(' ')[0].isdigit()]
@@ -691,7 +692,16 @@ def draw_card():
         text_widget.tag_config('ace', foreground='#FFD700')
     if special_messages:
         for msg in special_messages:
-            text_widget.insert(tk.END, msg + "\n", 'special')
+            if isinstance(msg, tuple) and msg[0] == 'color_combo':
+                # ('color_combo', prefix, color_name, color_hex, suffix)
+                prefix, color_name, color_hex, suffix = msg[1], msg[2], msg[3], msg[4]
+                text_widget.insert(tk.END, prefix)
+                tag_name = f"color_combo_{color_hex}"
+                text_widget.insert(tk.END, color_name, tag_name)
+                text_widget.tag_config(tag_name, foreground=color_hex)
+                text_widget.insert(tk.END, suffix + "\n")
+            else:
+                text_widget.insert(tk.END, msg + "\n", 'special')
         text_widget.tag_config('special', foreground='#FFFFFF')
     text_widget.config(state='disabled')
 
