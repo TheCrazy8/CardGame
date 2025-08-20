@@ -647,19 +647,21 @@ def draw_card():
                 return '#CCCCCC'  # fallback for unknown suit
         return '#CCCCCC'  # fallback for unknown card
 
-    suit_pattern = re.compile(r' of ([A-Za-z0-9]+)$')
     drawn_cards_colored = []
     for card in drawn_cards:
         if card in specials:
             suit = None
             color = '#FFD700'  # Special cards: gold
         else:
-            match = suit_pattern.search(card)
-            if match:
-                suit = match.group(1)
+            suit = None
+            # Try to match the suit from the end of the card string
+            for possible_suit in suit_colors.keys():
+                if card.endswith(f" of {possible_suit}"):
+                    suit = possible_suit
+                    break
+            if suit:
                 color = suit_colors.get(suit, '#CCCCCC')
             else:
-                suit = None
                 color = '#CCCCCC'
         drawn_cards_colored.append((card, suit, color))
 
