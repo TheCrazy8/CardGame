@@ -593,8 +593,7 @@ def draw_card():
     # Combo bonus check
     COMBO_SIZE = skills.get('combo_size', 3)
     # Only keep up to COMBO_SIZE-1 cards in history before this draw
-    combo_history = combo_history[-(COMBO_SIZE-1):]
-    combo_history.extend(drawn_cards)
+    combo_history = combo_history[-(COMBO_SIZE-1):] + drawn_cards
     # Check for combos only if combo_history has exactly COMBO_SIZE cards
     combo_message = None
     if len(combo_history) == COMBO_SIZE:
