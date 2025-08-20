@@ -1,5 +1,4 @@
 import time
-import pickle
 import random
 import tkinter as tk
 from tkinter import ttk
@@ -8,7 +7,6 @@ import json
 import os
 import sys
 from PIL import Image, ImageTk
-import io
 
 # Card deck and upgrade system
 base_suits = [
