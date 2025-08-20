@@ -691,17 +691,9 @@ def draw_card():
         text_widget.insert(tk.END, f"{ace_count} Ace(s) drawn! Total multiplied by {ace_multiplier}.\n", 'ace')
         text_widget.tag_config('ace', foreground='#FFD700')
     if special_messages:
-        for msg in special_messages:
-            if isinstance(msg, tuple) and msg[0] == 'color_combo':
-                # ('color_combo', prefix, color_name, color_hex, suffix)
-                prefix, color_name, color_hex, suffix = msg[1], msg[2], msg[3], msg[4]
-                text_widget.insert(tk.END, prefix)
-                text_widget.insert(tk.END, color_name, color)
-                text_widget.tag_config(color_name, foreground=color_hex)
-                text_widget.insert(tk.END, suffix + "\n")
-            else:
-                text_widget.insert(tk.END, msg + "\n", 'special')
-        text_widget.tag_config('special', foreground='#FFFFFF')
+        text_widget.insert(tk.END, special_messages[0] + '\n', 'special')
+        text_widget.tag_config('special', foreground=color)
+
     text_widget.config(state='disabled')
 
     total_label.config(text=f'Total: {total_count}')
