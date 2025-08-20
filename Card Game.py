@@ -6,6 +6,7 @@ import sv_ttk
 import json
 import os
 import sys
+import re
 from PIL import Image, ImageTk
 
 # Card deck and upgrade system
@@ -646,10 +647,21 @@ def draw_card():
                 return '#CCCCCC'  # fallback for unknown suit
         return '#CCCCCC'  # fallback for unknown card
 
+    suit_pattern = re.compile(r' of ([A-Za-z0-9]+)$')
     drawn_cards_colored = []
     for card in drawn_cards:
-        color = get_card_color(card)
-        drawn_cards_colored.append((card, color))
+        if card in specials:
+            suit = None
+            color = '#FFD700'  # Special cards: gold
+        else:
+            match = suit_pattern.search(card)
+            if match:
+                suit = match.group(1)
+                color = suit_colors.get(suit, '#CCCCCC')
+            else:
+                suit = None
+                color = '#CCCCCC'
+        drawn_cards_colored.append((card, suit, color))
 
     # Build a string with each card on a new line
     result_text = "Drawn cards:\n" + "\n".join([f"{card}" for card in drawn_cards])
@@ -667,17 +679,9 @@ def draw_card():
     text_widget.config(state='normal')
     text_widget.delete('1.0', tk.END)
     text_widget.insert(tk.END, "Drawn cards:\n")
-    for card, color in drawn_cards_colored:
+    for card, suit, color in drawn_cards_colored:
         tag_name = f"card_{card}_{random.randint(0,999999)}"
-        # Assign color tag before inserting text
-        if card in specials:
-            text_widget.tag_config(tag_name, foreground="#FFD700")
-        elif ' of ' in card:
-            suit = card.split(' of ')[-1]
-            suit_color = suit_colors.get(suit, "#CCCCCC")
-            text_widget.tag_config(tag_name, foreground=suit_color)
-        else:
-            text_widget.tag_config(tag_name, foreground="#CCCCCC")
+        text_widget.tag_config(tag_name, foreground=color)
         text_widget.insert(tk.END, f"{card}\n", tag_name)
     # Add ace and special messages
     if ace_count > 0:
