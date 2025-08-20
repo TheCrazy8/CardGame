@@ -639,7 +639,7 @@ def draw_card():
             return '#FFD700'  # Special cards: gold
         if ' of ' in card:
             suit = card.split(' of ')[-1]
-            return suit_colors.get(suit, '#FFFFFF')
+            return suit_colors.get(suit)
         else:
             return '#FFFFFF'
 
