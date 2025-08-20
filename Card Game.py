@@ -639,14 +639,31 @@ def draw_card():
         if card in specials:
             return '#FFD700'  # Special cards: gold
         if suit in suit_colors:
-            return suit_colors[suit]
-        else:
-            return lambda x: '#CCCCCC'
+            color = suit_colors.get(suit)
+            if color:
+                return color
+            else:
+                return '#CCCCCC'  # fallback for unknown suit
+        return '#CCCCCC'  # fallback for unknown card
 
-    # Remove color assignment for drawn cards
     drawn_cards_colored = []
-    color = get_card_color()
     for card in drawn_cards:
+        if card in specials:
+            suit = None
+            color = '#FFD700'  # Special cards: gold
+        else:
+            suit = None
+            # Extract suit by splitting from the right
+            parts = card.rsplit(' of ', 1)
+            if len(parts) == 2:
+                possible_suit = parts[1]
+                if possible_suit in suit_colors:
+                    suit = possible_suit
+                    color = suit_colors[suit]
+                else:
+                    color = '#CCCCCC'
+            else:
+                color = '#CCCCCC'
         drawn_cards_colored.append((card, suit, color))
 
     # Build a string with each card on a new line
@@ -665,9 +682,8 @@ def draw_card():
     text_widget.config(state='normal')
     text_widget.delete('1.0', tk.END)
     text_widget.insert(tk.END, "Drawn cards:\n")
-    text_widget.tag_configure('card', foreground='#CCCCCC')
     for card, suit, color in drawn_cards_colored:
-        text_widget.insert(tk.END, f"{card}\n", 'card')
+        text_widget.insert(tk.END, f"{card}\n", ('card', color))
         text_widget.tag_config('card', foreground=color)
     # Add ace and special messages
     if ace_count > 0:
