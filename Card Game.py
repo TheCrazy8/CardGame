@@ -595,7 +595,7 @@ def draw_card():
     # Only keep up to COMBO_SIZE-1 cards in history before this draw
     combo_history = combo_history[-(COMBO_SIZE-1):] + drawn_cards
     # Check for combos only if combo_history has exactly COMBO_SIZE cards
-    combo_message = None
+    combo_messages = []
     if len(combo_history) == COMBO_SIZE:
         last_combo = combo_history[:COMBO_SIZE]
         suits_in_combo = [c.split(' ')[-1] for c in last_combo if ' ' in c]
@@ -603,7 +603,7 @@ def draw_card():
         if len(set(suits_in_combo)) == 1 and len(suits_in_combo) == COMBO_SIZE:
             bonus = COMBO_BONUS * skills['combo_multiplier']
             total_count += bonus
-            combo_message = f'Combo! {COMBO_SIZE} {suits_in_combo[0]} cards: +{bonus}'
+            combo_messages.append(f'Combo! {COMBO_SIZE} {suits_in_combo[0]} cards: +{bonus}')
             combo_applied = True
         colors_in_combo = [suit_colors.get(suit, None) for suit in suits_in_combo]
         def hex_to_name(hex_code):
@@ -618,7 +618,7 @@ def draw_card():
             color_bonus = COLOR_COMBO_BONUS * skills['combo_multiplier']
             total_count += color_bonus
             color_name = hex_to_name(colors_in_combo[0])
-            combo_message = f'Color Combo! {COMBO_SIZE} {color_name} cards: +{color_bonus}'
+            combo_messages.append(f'Color Combo! {COMBO_SIZE} {color_name} cards: +{color_bonus}')
             combo_applied = True
         ranks_in_combo = [c.split(' ')[0] for c in last_combo if c.split(' ')[0].isdigit()]
         if len(ranks_in_combo) == COMBO_SIZE:
@@ -626,16 +626,16 @@ def draw_card():
             if sorted_ranks == list(range(sorted_ranks[0], sorted_ranks[0] + COMBO_SIZE)):
                 bonus = COMBO_BONUS * skills['combo_multiplier']
                 total_count += bonus
-                combo_message = f'Combo! {COMBO_SIZE} consecutive ranks: +{bonus}'
+                combo_messages.append(f'Combo! {COMBO_SIZE} consecutive ranks: +{bonus}')
                 combo_applied = True
         # Remove the combo cards from history if combo applied, else shift window by one
         if combo_applied:
             combo_history = []
         else:
             combo_history = combo_history[1:]
-        # Show combo message immediately
-        if combo_message:
-            special_messages.append(combo_message)
+        # Show all combo messages immediately
+        for msg in combo_messages:
+            special_messages.append(msg)
     # Build colored text for drawn cards
     def get_card_color(card):
         if card in specials:
