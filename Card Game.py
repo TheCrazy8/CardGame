@@ -811,9 +811,6 @@ style.configure('TitleBar.TFrame', background=bar_bg)
 style.configure('TitleBar.TLabel', background=bar_bg, foreground=bar_fg, font=('Arial', 14, 'bold'))
 style.configure('TitleBar.TButton', background=bar_bg, foreground=bar_fg)
 
-gallery_btn = ttk.Button(title_bar, text='Card Gallery', style='TitleBar.TButton', command=open_card_gallery)
-gallery_btn.pack(side='right', padx=5)
-
 # Title label
 title_label = ttk.Label(title_bar, text='Card Game', style='TitleBar.TLabel')
 title_label.pack(side='left', padx=10)
@@ -904,16 +901,6 @@ upgrade_draw_btn = ttk.Button(upgrade_frame, command=upgrade_draw_count)
 upgrade_draw_btn.pack(side='left', padx=5)
 
 update_upgrade_buttons()
-
-# Add save/load buttons to title bar
-save_btn = ttk.Button(title_bar, text='Save', style='TitleBar.TButton', command=save_progress)
-save_btn.pack(side='right', padx=5)
-load_btn = ttk.Button(title_bar, text='Load', style='TitleBar.TButton', command=load_progress)
-load_btn.pack(side='right', padx=5)
-
-# Add reset button to title bar
-reset_btn = ttk.Button(title_bar, text='Reset', style='TitleBar.TButton', command=reset_save)
-reset_btn.pack(side='right', padx=5)
 
 sv_ttk.set_theme("dark")
 
