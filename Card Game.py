@@ -179,10 +179,10 @@ def bland_effect():
 
 combo_history = []
 COMBO_SIZE = 3
-COMBO_BONUS = 100
+COMBO_BONUS = 30  # Nerfed combo bonus
 
 # Color combo bonus
-COLOR_COMBO_BONUS = 150
+COLOR_COMBO_BONUS = 50  # Nerfed color combo bonus
 
 # Suit effects
 suit_effects = {
@@ -603,10 +603,21 @@ def draw_card():
             combo_applied = True
         # All same color (color-based combo)
         colors_in_combo = [suit_colors.get(suit, None) for suit in suits_in_combo]
+        # Helper to get color name from hex
+        def hex_to_name(hex_code):
+            color_map = {
+                '#FF0000': 'Red', '#222222': 'Black', '#FFFF00': 'Yellow', '#1E90FF': 'Blue', '#FFD700': 'Gold',
+                '#228B22': 'Green', '#FFA500': 'Orange', '#808080': 'Gray', '#800080': 'Purple', '#8B4513': 'Brown',
+                '#C0C0C0': 'Silver', '#F5F5DC': 'Beige', '#CD7F32': 'Bronze', '#FFFFFF': 'White', '#00FFFF': 'Cyan',
+                '#FFC0CB': 'Pink'
+            }
+            return color_map.get(hex_code, hex_code)
+
         if len(set(colors_in_combo)) == 1 and None not in colors_in_combo and len(colors_in_combo) == COMBO_SIZE:
             color_bonus = COLOR_COMBO_BONUS * skills['combo_multiplier']
             total_count += color_bonus
-            special_messages.append(f'Color Combo! {COMBO_SIZE} {colors_in_combo[0]} cards: +{color_bonus}')
+            color_name = hex_to_name(colors_in_combo[0])
+            special_messages.append(f'Color Combo! {COMBO_SIZE} {color_name} cards: +{color_bonus}')
             combo_applied = True
         # Consecutive ranks (for numeric ranks only)
         ranks_in_combo = [c.split(' ')[0] for c in last_combo if c.split(' ')[0].isdigit()]
@@ -625,11 +636,12 @@ def draw_card():
     # Build colored text for drawn cards
     def get_card_color(card):
         if card in specials:
-            return '#FFFFFF'  # Special cards: white
+            return '#FFD700'  # Special cards: gold
         if ' of ' in card:
             suit = card.split(' of ')[-1]
             return suit_colors.get(suit, '#FFFFFF')
-        return '#FFFFFF'
+        else:
+            return '#FFFFFF'
 
     drawn_cards_colored = []
     for card in drawn_cards:
@@ -660,7 +672,11 @@ def draw_card():
         # Create a unique tag for each card line to avoid tag conflicts
         tag_name = f"card_{card}_{random.randint(0,999999)}"
         text_widget.insert(tk.END, f"{card}\n", tag_name)
-        text_widget.tag_config(tag_name, foreground=color)
+        # Only apply color if not default white
+        if color != '#FFFFFF':
+            text_widget.tag_config(tag_name, foreground=color)
+        else:
+            text_widget.tag_config(tag_name, foreground='#CCCCCC')
     # Add ace and special messages
     if ace_count > 0:
         text_widget.insert(tk.END, f"{ace_count} Ace(s) drawn! Total multiplied by {ace_multiplier}.\n", 'ace')
