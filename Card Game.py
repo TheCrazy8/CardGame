@@ -219,8 +219,8 @@ def stars_effect():
     return '+25 bonus from Stars!'
 
 def moons_effect():
-    global draw_count
-    draw_count += 1
+    global extra_draw_next
+    extra_draw_next = True
     return 'Moons! Draw +1 card next turn.'
 
 def crowns_effect():
