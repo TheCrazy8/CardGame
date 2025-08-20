@@ -618,8 +618,7 @@ def draw_card():
             color_bonus = COLOR_COMBO_BONUS * skills['combo_multiplier']
             total_count += color_bonus
             color_name = hex_to_name(colors_in_combo[0])
-            # Store color info for later coloring in Text widget
-            special_messages.append(('color_combo', f'Color Combo! {COMBO_SIZE} ', color_name, colors_in_combo[0], f' cards: +{color_bonus}'))
+            special_messages.append(f'Color Combo! {COMBO_SIZE} {color_name} cards: +{color_bonus}')
             combo_applied = True
         # Consecutive ranks (for numeric ranks only)
         ranks_in_combo = [c.split(' ')[0] for c in last_combo if c.split(' ')[0].isdigit()]
@@ -691,9 +690,9 @@ def draw_card():
         text_widget.insert(tk.END, f"{ace_count} Ace(s) drawn! Total multiplied by {ace_multiplier}.\n", 'ace')
         text_widget.tag_config('ace', foreground='#FFD700')
     if special_messages:
-        text_widget.insert(tk.END, special_messages[0] + '\n', 'special')
-        text_widget.tag_config('special', foreground=color)
-
+        for msg in special_messages:
+            text_widget.insert(tk.END, msg + "\n", 'special')
+        text_widget.tag_config('special', foreground='#FFFFFF')
     text_widget.config(state='disabled')
 
     total_label.config(text=f'Total: {total_count}')
