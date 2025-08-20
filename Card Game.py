@@ -673,10 +673,7 @@ def draw_card():
         tag_name = f"card_{card}_{random.randint(0,999999)}"
         text_widget.insert(tk.END, f"{card}\n", tag_name)
         # Only apply color if not default white
-        if color != '#FFFFFF':
-            text_widget.tag_config(tag_name, foreground=color)
-        else:
-            text_widget.tag_config(tag_name, foreground='#CCCCCC')
+        text_widget.tag_config(tag_name, foreground=color)
     # Add ace and special messages
     if ace_count > 0:
         text_widget.insert(tk.END, f"{ace_count} Ace(s) drawn! Total multiplied by {ace_multiplier}.\n", 'ace')
