@@ -639,9 +639,12 @@ def draw_card():
             return '#FFD700'  # Special cards: gold
         if ' of ' in card:
             suit = card.split(' of ')[-1]
-            return suit_colors.get(suit)
-        else:
-            return '#FFFFFF'
+            color = suit_colors.get(suit)
+            if color:
+                return color
+            else:
+                return '#CCCCCC'  # fallback for unknown suit
+        return '#CCCCCC'  # fallback for unknown card
 
     drawn_cards_colored = []
     for card in drawn_cards:
