@@ -39,6 +39,22 @@ base_suits = [
     'Paws', 'Hooves', 'Antlers', 'Shells', 'Fins', 'Roots', 'Stalks', 'Seeds', 'Pods', 'Stars2',
     'Moons2', 'Crowns2', 'Leaves2', 'Suns2', 'Waves2', 'Shields2', 'Orbs2', 'Axes2', 'Spears2', 'Rings2'
 ]
+
+# Suit color mapping for color-based combos (hex codes)
+suit_colors = {
+    'Hearts': '#FF0000', 'Diamonds': '#FF0000', 'Clubs': '#222222', 'Spades': '#222222',
+    'Stars': '#FFFF00', 'Moons': '#1E90FF', 'Crowns': '#FFD700', 'Leaves': '#228B22', 'Suns': '#FFA500', 'Waves': '#1E90FF',
+    'Shields': '#808080', 'Orbs': '#800080', 'Axes': '#8B4513', 'Spears': '#C0C0C0', 'Rings': '#FFD700', 'Cups': '#C0C0C0',
+    'Scrolls': '#F5F5DC', 'Keys': '#CD7F32', 'Masks': '#FFFFFF', 'Fangs': '#FFFFFF', 'Eyes': '#1E90FF', 'Wings': '#FFFFFF',
+    'Roots': '#8B4513', 'Flames': '#FFA500', 'Clouds': '#FFFFFF', 'Stones': '#808080', 'Webs': '#FFFFFF', 'Beams': '#FFFF00',
+    'Echoes': '#1E90FF', 'Frost': '#00FFFF', 'Petals': '#FFC0CB', 'Coins': '#FFD700', 'Swords': '#C0C0C0', 'Helms': '#808080',
+    'Lanterns': '#FFFF00', 'Talons': '#222222', 'Scales': '#228B22', 'Spirals': '#800080', 'Comets': '#FFFFFF', 'Vines': '#228B22',
+    'Crystals': '#00FFFF', 'Mirrors': '#C0C0C0', 'Bells': '#FFD700', 'Horns': '#8B4513', 'Cogs': '#808080', 'Rays': '#FFFF00',
+    'Dust': '#808080', 'Mists': '#FFFFFF', 'Roses': '#FF0000', 'Thorns': '#8B4513', 'Paws': '#8B4513', 'Hooves': '#808080',
+    'Antlers': '#FFFFFF', 'Shells': '#FFFFFF', 'Fins': '#1E90FF', 'Stalks': '#228B22', 'Seeds': '#8B4513', 'Pods': '#228B22',
+    'Stars2': '#FFFF00', 'Moons2': '#1E90FF', 'Crowns2': '#FFD700', 'Leaves2': '#228B22', 'Suns2': '#FFA500', 'Waves2': '#1E90FF',
+    'Shields2': '#808080', 'Orbs2': '#800080', 'Axes2': '#8B4513', 'Spears2': '#C0C0C0', 'Rings2': '#FFD700'
+}
 base_ranks = [
     '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A',
     'Z', 'X', 'M', 'P', 'R', 'S', 'T', 'U', 'V', 'W', 'Y', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'L', 'N', 'O',
@@ -182,10 +198,12 @@ def bland_effect():
     total_count -= 100
     return 'Bland! -100 from total.'
 
-# Combo bonus tracking
 combo_history = []
 COMBO_SIZE = 3
 COMBO_BONUS = 100
+
+# Color combo bonus
+COLOR_COMBO_BONUS = 150
 
 # Suit effects
 suit_effects = {
@@ -696,14 +714,21 @@ def draw_card():
     combo_history.extend(drawn_cards)
     if len(combo_history) >= COMBO_SIZE:
         last_combo = combo_history[-COMBO_SIZE:]
-        # Example: all same suit
+        # All same suit
         suits_in_combo = [c.split(' ')[-1] for c in last_combo if ' ' in c]
         if len(set(suits_in_combo)) == 1 and len(suits_in_combo) == COMBO_SIZE:
             bonus = COMBO_BONUS * skills['combo_multiplier']
             total_count += bonus
             special_messages.append(f'Combo! {COMBO_SIZE} {suits_in_combo[0]} cards: +{bonus}')
             combo_applied = True
-        # Example: consecutive ranks (for numeric ranks only)
+        # All same color (color-based combo)
+        colors_in_combo = [suit_colors.get(suit, None) for suit in suits_in_combo]
+        if len(set(colors_in_combo)) == 1 and None not in colors_in_combo and len(colors_in_combo) == COMBO_SIZE:
+            color_bonus = COLOR_COMBO_BONUS * skills['combo_multiplier']
+            total_count += color_bonus
+            special_messages.append(f'Color Combo! {COMBO_SIZE} {colors_in_combo[0]} cards: +{color_bonus}')
+            combo_applied = True
+        # Consecutive ranks (for numeric ranks only)
         ranks_in_combo = [c.split(' ')[0] for c in last_combo if c.split(' ')[0].isdigit()]
         if len(ranks_in_combo) == COMBO_SIZE:
             sorted_ranks = sorted(map(int, ranks_in_combo))
