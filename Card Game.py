@@ -668,12 +668,15 @@ def draw_card():
     text_widget.delete('1.0', tk.END)
     text_widget.insert(tk.END, "Drawn cards:\n")
     for card, color in drawn_cards_colored:
-        # Create a unique tag for each card line to avoid tag conflicts
         tag_name = f"card_{card}_{random.randint(0,999999)}"
         text_widget.insert(tk.END, f"{card}\n", tag_name)
-        # Use suit color for normal cards, gold for specials, fallback to gray for unknown
-        if color:
-            text_widget.tag_config(tag_name, foreground=color)
+        # Fix: Use suit color for normal cards, gold for specials, fallback to gray for unknown
+        if card in specials:
+            text_widget.tag_config(tag_name, foreground="#FFD700")
+        elif ' of ' in card:
+            suit = card.split(' of ')[-1]
+            suit_color = suit_colors.get(suit, "#CCCCCC")
+            text_widget.tag_config(tag_name, foreground=suit_color)
         else:
             text_widget.tag_config(tag_name, foreground="#CCCCCC")
     # Add ace and special messages
