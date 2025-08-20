@@ -669,8 +669,7 @@ def draw_card():
     text_widget.insert(tk.END, "Drawn cards:\n")
     for card, color in drawn_cards_colored:
         tag_name = f"card_{card}_{random.randint(0,999999)}"
-        text_widget.insert(tk.END, f"{card}\n", tag_name)
-        # Fix: Use suit color for normal cards, gold for specials, fallback to gray for unknown
+        # Assign color tag before inserting text
         if card in specials:
             text_widget.tag_config(tag_name, foreground="#FFD700")
         elif ' of ' in card:
@@ -679,6 +678,7 @@ def draw_card():
             text_widget.tag_config(tag_name, foreground=suit_color)
         else:
             text_widget.tag_config(tag_name, foreground="#CCCCCC")
+        text_widget.insert(tk.END, f"{card}\n", tag_name)
     # Add ace and special messages
     if ace_count > 0:
         text_widget.insert(tk.END, f"{ace_count} Ace(s) drawn! Total multiplied by {ace_multiplier}.\n", 'ace')
