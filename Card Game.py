@@ -440,70 +440,63 @@ def load_card_image(card_name):
         card_images[filename] = photo
         return photo
     except Exception:
-            # Procedurally generate card image in reference style
-            img = Image.new('RGBA', CARD_IMAGE_SIZE, (255,255,255,255))
-            draw = ImageDraw.Draw(img)
-            # Parse rank and suit
-            if ' of ' in card_name:
-                parts = card_name.split(' of ')
-                rank, suit = parts[0], parts[1]
-            else:
-                rank, suit = card_name, None
-            # Get color
-            color = suit_colors.get(suit, '#CCCCCC') if suit else '#FFD700'
-            # Draw border (thicker, colored)
-            border_width = 8
-            for i in range(border_width):
-                draw.rectangle([i,i,CARD_IMAGE_SIZE[0]-1-i,CARD_IMAGE_SIZE[1]-1-i], outline=color)
-            # Suit symbol mapping (Unicode only)
-            suit_symbols = {
-                'Hearts': '♥', 'Diamonds': '♦', 'Clubs': '♣', 'Spades': '♠',
-                'Stars': '★', 'Moons': '☾', 'Crowns': '♛', 'Leaves': '♣', 'Suns': '☼', 'Waves': '≈',
-                'Shields': '⛨', 'Orbs': '◉', 'Axes': '⛏', 'Spears': '⚔', 'Rings': '◯', 'Cups': '☕',
-                'Scrolls': '✉', 'Keys': '⚿', 'Masks': '☻', 'Fangs': '∇', 'Eyes': '◉', 'Wings': '⚚',
-                'Roots': '♣', 'Flames': '♨', 'Clouds': '☁', 'Stones': '⬥', 'Webs': '⌘', 'Beams': '≡',
-                'Echoes': '♪', 'Frost': '❄', 'Petals': '✿', 'Coins': '◉', 'Swords': '⚔', 'Helms': '⛑',
-                'Lanterns': '☼', 'Talons': '⚡', 'Scales': '⚖', 'Spirals': '➰', 'Comets': '☄', 'Vines': '♣',
-                'Crystals': '♦', 'Mirrors': '◊', 'Bells': '🔔', 'Horns': '♯', 'Cogs': '⚙', 'Rays': '☀',
-                'Dust': '⋱', 'Mists': '〰', 'Roses': '✾', 'Thorns': '†', 'Paws': '☸', 'Hooves': '∩',
-                'Antlers': '∩', 'Shells': '◗', 'Fins': '∫', 'Stalks': '∣', 'Seeds': '•', 'Pods': '◉'
-            }
-            # Font selection: bold sans-serif
-            font_size_rank = 48
-            font_size_suit = 40
+        # Procedurally generate card image
+        img = Image.new('RGBA', CARD_IMAGE_SIZE, (255,255,255,255))
+        draw = ImageDraw.Draw(img)
+        # Parse rank and suit
+        rank, suit = None, None
+        if ' of ' in card_name:
+            parts = card_name.split(' of ')
+            rank, suit = parts[0], parts[1]
+        else:
+            rank, suit = card_name, None
+        # Get color
+        color = suit_colors.get(suit, '#CCCCCC') if suit else '#FFD700'
+        # Draw border
+        draw.rectangle([0,0,CARD_IMAGE_SIZE[0]-1,CARD_IMAGE_SIZE[1]-1], outline=color, width=4)
+        # Draw suit name and symbol
+        font_size = 32
+        try:
+            font = ImageFont.truetype('arial.ttf', font_size)
+        except Exception:
+            font = ImageFont.load_default()
+        # Suit symbol mapping (only Unicode symbols, no emoji)
+        suit_symbols = {
+            'Hearts': '♥', 'Diamonds': '♦', 'Clubs': '♣', 'Spades': '♠',
+            'Stars': '★', 'Moons': '☾', 'Crowns': '♛', 'Leaves': '♣', 'Suns': '☼', 'Waves': '≈',
+            'Shields': '⛨', 'Orbs': '◉', 'Axes': '⛏', 'Spears': '⚔', 'Rings': '◯', 'Cups': '☕',
+            'Scrolls': '✉', 'Keys': '⚿', 'Masks': '☻', 'Fangs': '∇', 'Eyes': '◉', 'Wings': '⚚',
+            'Roots': '♣', 'Flames': '♨', 'Clouds': '☁', 'Stones': '⬥', 'Webs': '⌘', 'Beams': '≡',
+            'Echoes': '♪', 'Frost': '❄', 'Petals': '✿', 'Coins': '◉', 'Swords': '⚔', 'Helms': '⛑',
+            'Lanterns': '☼', 'Talons': '⚡', 'Scales': '⚖', 'Spirals': '➰', 'Comets': '☄', 'Vines': '♣',
+            'Crystals': '♦', 'Mirrors': '◊', 'Bells': '🔔', 'Horns': '♯', 'Cogs': '⚙', 'Rays': '☀',
+            'Dust': '⋱', 'Mists': '〰', 'Roses': '✾', 'Thorns': '†', 'Paws': '☸', 'Hooves': '∩',
+            'Antlers': '∩', 'Shells': '◗', 'Fins': '∫', 'Stalks': '∣', 'Seeds': '•', 'Pods': '◉'
+        }
+        # Draw suit symbol top left, then rank next to it
+        if suit:
+            symbol = suit_symbols.get(suit, '?')
+            draw.text((10, 10), symbol, font=font, fill=color)
+            draw.text((10 + font_size + 5, 10), str(rank), font=font, fill=color)
+            # Optionally, draw suit name below symbol (smaller font)
             try:
-                font_rank = ImageFont.truetype('arialbd.ttf', font_size_rank)
+                small_font = ImageFont.truetype('arial.ttf', 16)
             except Exception:
-                font_rank = ImageFont.load_default()
-            try:
-                font_suit = ImageFont.truetype('arial.ttf', font_size_suit)
-            except Exception:
-                font_suit = ImageFont.load_default()
-            # Draw rank top left (with outline)
-            def draw_text_outline(draw, pos, text, font, fill, outline):
-                x, y = pos
-                for dx, dy in [(-2,0),(2,0),(0,-2),(0,2),(-2,-2),(2,2),(-2,2),(2,-2)]:
-                    draw.text((x+dx, y+dy), text, font=font, fill=outline)
-                draw.text((x, y), text, font=font, fill=fill)
-            outline_color = '#000000' if color != '#222222' else '#FFFFFF'
-            draw_text_outline(draw, (16, 8), str(rank), font_rank, color, outline_color)
-            # Draw suit symbol bottom right (with outline)
-            if suit:
-                symbol = suit_symbols.get(suit, '?')
-                w, h = draw.textsize(symbol, font=font_suit)
-                draw_text_outline(draw, (CARD_IMAGE_SIZE[0]-w-18, CARD_IMAGE_SIZE[1]-h-12), symbol, font_suit, color, outline_color)
-            # Center delta symbol if rank is delta
-            if rank == 'Δ':
-                w, h = draw.textsize('Δ', font=font_rank)
-                draw_text_outline(draw, ((CARD_IMAGE_SIZE[0]-w)//2, (CARD_IMAGE_SIZE[1]-h)//2), 'Δ', font_rank, color, outline_color)
-            # Optionally, add special card background
-            if card_name in specials:
-                for i in range(border_width, border_width+4):
-                    draw.rectangle([i,i,CARD_IMAGE_SIZE[0]-1-i,CARD_IMAGE_SIZE[1]-1-i], outline='#FFD700')
-                draw_text_outline(draw, (CARD_IMAGE_SIZE[0]//2-40, CARD_IMAGE_SIZE[1]//2-20), card_name, font_rank, '#FFD700', outline_color)
-            photo = ImageTk.PhotoImage(img)
-            card_images[filename] = photo
-            return photo
+                small_font = ImageFont.load_default()
+            draw.text((10, 10 + font_size + 2), suit, font=small_font, fill=color)
+        else:
+            # For specials, just draw rank top left
+            draw.text((10, 10), str(rank), font=font, fill=color)
+        # Center delta symbol if rank is delta
+        if rank == 'Δ':
+            draw.text((CARD_IMAGE_SIZE[0]//2-10, CARD_IMAGE_SIZE[1]//2-10), 'Δ', font=font, fill=color)
+        # Optionally, add special card background
+        if card_name in specials:
+            draw.rectangle([0,0,CARD_IMAGE_SIZE[0],CARD_IMAGE_SIZE[1]], outline='#FFD700', width=8)
+            draw.text((CARD_IMAGE_SIZE[0]//2-40, CARD_IMAGE_SIZE[1]//2-20), card_name, font=font, fill='#FFD700')
+        photo = ImageTk.PhotoImage(img)
+        card_images[filename] = photo
+        return photo
 
 # Tkinter GUI setup
 root = tk.Tk()
