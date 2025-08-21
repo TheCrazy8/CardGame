@@ -60,14 +60,12 @@ SPECIAL_CARD_CHANCE = 0.05  # 5% chance to draw a special card
 special_card_weights = {
     'Joker': 0.10,
     'Double': 0.10,
-    'Reset': 0.10,
     'Bonus': 0.10,
-    'Triple': 0.05,
+    'Triple': 0.10,
     'Half': 0.10,
     'Steal': 0.10,
-    'Gift': 0.10,
-    'Shield': 0.05,
-    'Bland': 0.20
+    'Gift': 0.15,
+    'Bland': 0.25
 }
 
 # Helper to pick a special card by weighted chance
@@ -98,25 +96,21 @@ rank_values.update({'J': 11, 'Q': 12, 'K': 13, 'A': 14, '1': 1})
 special_card_pool = [
     ('Joker', lambda: joker_effect()),
     ('Double', lambda: double_effect()),
-    ('Reset', lambda: reset_effect()),
     ('Bonus', lambda: bonus_effect()),
     ('Triple', lambda: triple_effect()),
     ('Half', lambda: half_effect()),
     ('Steal', lambda: steal_effect()),
     ('Gift', lambda: gift_effect()),
-    ('Shield', lambda: shield_effect()),
     ('Bland', lambda: bland_effect())
 ]
 special_abilities = {
     'Joker': lambda: joker_effect(),
     'Double': lambda: double_effect(),
-    'Reset': lambda: reset_effect(),
     'Bonus': lambda: bonus_effect(),
     'Triple': lambda: triple_effect(),
     'Half': lambda: half_effect(),
     'Steal': lambda: steal_effect(),
     'Gift': lambda: gift_effect(),
-    'Shield': lambda: shield_effect(),
     'Bland': lambda: bland_effect()
 }
 
@@ -130,14 +124,6 @@ def double_effect():
     global total_count
     total_count += 50
     return 'Double! +50 to total.'
-
-def reset_effect():
-    global total_count, shield_active
-    if shield_active:
-        shield_active = False
-        return 'Reset blocked by Shield!'
-    total_count = 0
-    return 'Reset! Total set to 0.'
 
 def bonus_effect():
     global total_count
@@ -163,11 +149,6 @@ def gift_effect():
     global total_count
     total_count += 500
     return 'Gift! +500 to total.'
-
-def shield_effect():
-    global shield_active
-    shield_active = True
-    return 'Shield! Next Reset blocked.'
 
 def bland_effect():
     global total_count
