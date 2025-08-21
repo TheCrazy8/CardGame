@@ -449,7 +449,7 @@ IMAGE_DIR = get_image_dir()
 
 # Helper to get image filename for a card
 def get_card_image_filename(card_name):
-    card_name = card_name.replace(' ', '').replace('of', '_').replace('Hearts', 'heart').replace('Diamonds', 'diamond').replace('Clubs', 'club').replace('Spades', 'spade')
+    card_name = card_name.replace(' ', '').replace('of', '_').replace('Hearts', 'hearts').replace('Diamonds', 'diamonds').replace('Clubs', 'clubs').replace('Spades', 'spades')
     card_name = card_name.lower()
     return os.path.join(IMAGE_DIR, f'{card_name}.png')
 
