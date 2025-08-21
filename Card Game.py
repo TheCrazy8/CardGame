@@ -691,9 +691,10 @@ def draw_card():
     text_widget.config(state='normal')
     text_widget.delete('1.0', tk.END)
     text_widget.insert(tk.END, "Drawn cards:\n")
-    for card, suit, color in drawn_cards_colored:
-        text_widget.insert(tk.END, f"{card}\n", ('card', color))
-        text_widget.tag_config('card', foreground=color)
+    for idx, (card, suit, color) in enumerate(drawn_cards_colored):
+        tag_name = f'card_{idx}'
+        text_widget.insert(tk.END, f"{card}\n", tag_name)
+        text_widget.tag_config(tag_name, foreground=color)
     # Add ace message
     if ace_count > 0:
         text_widget.insert(tk.END, f"{ace_count} Ace(s) drawn! Total multiplied by {ace_multiplier}.\n", 'ace')
@@ -707,22 +708,38 @@ def draw_card():
     total_label.config(text=f'Total: {total_count}')
     next_upgrade_discount = 1.0
     random.shuffle(deck)
-    # Show image for last drawn card with fade-in animation
-    if last_drawn:
-        img = load_card_image(last_drawn)
-        def fade_in(step=0):
-            alpha = int(255 * (step / 10))
-            if alpha > 255:
-                alpha = 255
-            # Create a faded image
-            pil_img = Image.open(get_card_image_filename(last_drawn)).resize(CARD_IMAGE_SIZE).convert('RGBA')
-            pil_img.putalpha(alpha)
-            tk_img = ImageTk.PhotoImage(pil_img)
-            card_image_label.config(image=tk_img)
-            card_image_label.image = tk_img
-            if step < 10:
-                root.after(30, lambda: fade_in(step+1))
-        fade_in(0)
+    # Show images for all drawn cards (multiple images for upgraded draw counts)
+    # Remove previous images if any
+    if hasattr(root, 'card_image_frame'):
+        root.card_image_frame.destroy()
+    root.card_image_frame = ttk.Frame(root)
+    root.card_image_frame.pack(pady=10)
+    def fade_in_multi(images, labels, step=0):
+        alpha = int(255 * (step / 10))
+        if alpha > 255:
+            alpha = 255
+        for idx, card in enumerate(drawn_cards):
+            try:
+                pil_img = Image.open(get_card_image_filename(card)).resize(CARD_IMAGE_SIZE).convert('RGBA')
+                pil_img.putalpha(alpha)
+                tk_img = ImageTk.PhotoImage(pil_img)
+                labels[idx].config(image=tk_img)
+                labels[idx].image = tk_img
+            except Exception:
+                pass
+        if step < 10:
+            root.after(30, lambda: fade_in_multi(images, labels, step+1))
+    images = []
+    labels = []
+    for idx, card in enumerate(drawn_cards):
+        img = load_card_image(card)
+        lbl = ttk.Label(root.card_image_frame, image=img)
+        lbl.image = img
+        lbl.grid(row=0, column=idx, padx=5)
+        images.append(img)
+        labels.append(lbl)
+    if drawn_cards:
+        fade_in_multi(images, labels, 0)
     # Optionally, add score to leaderboard
     add_score_to_leaderboard('Player', total_count)
 
