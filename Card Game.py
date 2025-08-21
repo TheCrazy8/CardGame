@@ -492,11 +492,23 @@ def open_card_gallery():
     canvas.configure(yscrollcommand=scrollbar.set)
     frame = ttk.Frame(canvas)
     canvas.create_window((0,0), window=frame, anchor='nw')
-    # Gather all unlocked cards
-    unlocked_cards = [f'{rank} of {suit}' for suit in suits for rank in ranks] + list(specials.keys())
+    # Gather all unlocked cards and sort by suit then rank
+    def rank_sort_key(rank):
+        # Try to sort numerically, fallback to string
+        try:
+            return int(rank) if rank.isdigit() else base_ranks.index(rank)
+        except Exception:
+            return 9999
+    sorted_cards = []
+    for suit in sorted(suits, key=lambda s: base_suits.index(s) if s in base_suits else s):
+        suit_ranks = sorted(ranks, key=rank_sort_key)
+        for rank in suit_ranks:
+            sorted_cards.append(f'{rank} of {suit}')
+    # Add specials at the end
+    sorted_cards += sorted(list(specials.keys()))
     # Display images in a grid
     cols = 5
-    for idx, card in enumerate(unlocked_cards):
+    for idx, card in enumerate(sorted_cards):
         img = load_card_image(card)
         lbl = ttk.Label(frame, image=img)
         lbl.image = img
