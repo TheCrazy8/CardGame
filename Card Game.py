@@ -7,7 +7,8 @@ import json
 import os
 import sys
 import re
-from PIL import Image, ImageTk
+from PIL import Image, ImageTk, ImageDraw, ImageFont
+
 
 # Card deck and upgrade system
 base_suits = [
@@ -458,8 +459,58 @@ def load_card_image(card_name):
         card_images[filename] = photo
         return photo
     except Exception:
-        # Fallback: blank image
-        img = Image.new('RGBA', CARD_IMAGE_SIZE, (128,128,128,255))
+        # Procedurally generate card image
+        img = Image.new('RGBA', CARD_IMAGE_SIZE, (255,255,255,255))
+        draw = ImageDraw.Draw(img)
+        # Parse rank and suit
+        rank, suit = None, None
+        if ' of ' in card_name:
+            parts = card_name.split(' of ')
+            rank, suit = parts[0], parts[1]
+        else:
+            rank, suit = card_name, None
+        # Get color
+        color = suit_colors.get(suit, '#CCCCCC') if suit else '#FFD700'
+        # Draw border
+        draw.rectangle([0,0,CARD_IMAGE_SIZE[0]-1,CARD_IMAGE_SIZE[1]-1], outline=color, width=4)
+        # Draw suit name and symbol
+        font_size = 32
+        try:
+            font = ImageFont.truetype('arial.ttf', font_size)
+        except Exception:
+            font = ImageFont.load_default()
+        # Suit symbol mapping
+        suit_symbols = {
+            'Hearts': '♥', 'Diamonds': '♦', 'Clubs': '♣', 'Spades': '♠',
+            'Stars': '★', 'Moons': '☾', 'Crowns': '👑', 'Leaves': '🍃', 'Suns': '☀', 'Waves': '🌊',
+            'Shields': '🛡', 'Orbs': '⚪', 'Axes': '🪓', 'Spears': '⚔', 'Rings': '💍', 'Cups': '🍷',
+            'Scrolls': '📜', 'Keys': '🔑', 'Masks': '🎭', 'Fangs': '🦷', 'Eyes': '👁', 'Wings': '🪽',
+            'Roots': '🌱', 'Flames': '🔥', 'Clouds': '☁', 'Stones': '🪨', 'Webs': '🕸', 'Beams': '🔆',
+            'Echoes': '🔊', 'Frost': '❄', 'Petals': '🌸', 'Coins': '🪙', 'Swords': '🗡', 'Helms': '🪖',
+            'Lanterns': '🏮', 'Talons': '🦅', 'Scales': '⚖', 'Spirals': '🌀', 'Comets': '☄', 'Vines': '🌿',
+            'Crystals': '🔮', 'Mirrors': '🪞', 'Bells': '🔔', 'Horns': '📯', 'Cogs': '⚙', 'Rays': '🌟',
+            'Dust': '🌫', 'Mists': '🌁', 'Roses': '🌹', 'Thorns': '🌵', 'Paws': '🐾', 'Hooves': '🐴',
+            'Antlers': '🦌', 'Shells': '🐚', 'Fins': '🐟', 'Stalks': '🌾', 'Seeds': '🌰', 'Pods': '🫛'
+        }
+        # Draw rank top left
+        draw.text((10, 10), str(rank), font=font, fill=color)
+        # Draw suit symbol bottom right
+        if suit:
+            symbol = suit_symbols.get(suit, '?')
+            draw.text((CARD_IMAGE_SIZE[0]-font_size-10, CARD_IMAGE_SIZE[1]-font_size-10), symbol, font=font, fill=color)
+            # Optionally, draw suit name below symbol (smaller font)
+            try:
+                small_font = ImageFont.truetype('arial.ttf', 16)
+            except Exception:
+                small_font = ImageFont.load_default()
+            draw.text((CARD_IMAGE_SIZE[0]-font_size-10, CARD_IMAGE_SIZE[1]-font_size), suit, font=small_font, fill=color)
+        # Center delta symbol if rank is delta
+        if rank == 'Δ':
+            draw.text((CARD_IMAGE_SIZE[0]//2-10, CARD_IMAGE_SIZE[1]//2-10), 'Δ', font=font, fill=color)
+        # Optionally, add special card background
+        if card_name in specials:
+            draw.rectangle([0,0,CARD_IMAGE_SIZE[0],CARD_IMAGE_SIZE[1]], outline='#FFD700', width=8)
+            draw.text((CARD_IMAGE_SIZE[0]//2-40, CARD_IMAGE_SIZE[1]//2-20), card_name, font=font, fill='#FFD700')
         photo = ImageTk.PhotoImage(img)
         card_images[filename] = photo
         return photo
