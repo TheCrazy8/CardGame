@@ -691,10 +691,26 @@ def draw_card():
     text_widget.config(state='normal')
     text_widget.delete('1.0', tk.END)
     text_widget.insert(tk.END, "Drawn cards:\n")
+    # Draw each card line with a high-contrast outline for visibility
     for idx, (card, suit, color) in enumerate(drawn_cards_colored):
-        tag_name = f'card_{idx}'
-        text_widget.insert(tk.END, f"{card}\n", tag_name)
-        text_widget.tag_config(tag_name, foreground=color)
+        tag_main = f'card_{idx}_main'
+        tag_outline = f'card_{idx}_outline'
+        # Choose outline color based on main color brightness
+        def get_outline_color(hex_color):
+            # Convert hex to RGB
+            hex_color = hex_color.lstrip('#')
+            if len(hex_color) == 3:
+                hex_color = ''.join([c*2 for c in hex_color])
+            r, g, b = tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
+            # Perceived brightness
+            brightness = (r*299 + g*587 + b*114) / 1000
+            return '#FFFFFF' if brightness < 128 else '#000000'
+        outline_color = get_outline_color(color)
+        # Insert outline text (simulate outline by inserting same text offset by 1 space, then main text)
+        text_widget.insert(tk.END, f" {card}\n", tag_outline)
+        text_widget.tag_config(tag_outline, foreground=outline_color)
+        text_widget.insert(tk.END, f"{card}\n", tag_main)
+        text_widget.tag_config(tag_main, foreground=color)
     # Add ace message
     if ace_count > 0:
         text_widget.insert(tk.END, f"{ace_count} Ace(s) drawn! Total multiplied by {ace_multiplier}.\n", 'ace')
