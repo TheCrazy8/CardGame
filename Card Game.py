@@ -16,8 +16,7 @@ base_suits = [
     'Eyes', 'Wings', 'Roots', 'Flames', 'Clouds', 'Stones', 'Webs', 'Beams', 'Echoes', 'Frost',
     'Petals', 'Coins', 'Swords', 'Helms', 'Lanterns', 'Talons', 'Scales', 'Spirals', 'Comets', 'Vines',
     'Crystals', 'Mirrors', 'Bells', 'Horns', 'Cogs', 'Rays', 'Dust', 'Mists', 'Roses', 'Thorns',
-    'Paws', 'Hooves', 'Antlers', 'Shells', 'Fins', 'Roots', 'Stalks', 'Seeds', 'Pods', 'Stars2',
-    'Moons2', 'Crowns2', 'Leaves2', 'Suns2', 'Waves2', 'Shields2', 'Orbs2', 'Axes2', 'Spears2', 'Rings2'
+    'Paws', 'Hooves', 'Antlers', 'Shells', 'Fins', 'Roots', 'Stalks', 'Seeds', 'Pods'
 ]
 
 # Suit color mapping for color-based combos (hex codes)
@@ -31,9 +30,7 @@ suit_colors = {
     'Lanterns': '#FFFF00', 'Talons': '#222222', 'Scales': '#228B22', 'Spirals': '#800080', 'Comets': '#FFFFFF', 'Vines': '#228B22',
     'Crystals': '#00FFFF', 'Mirrors': '#C0C0C0', 'Bells': '#FFD700', 'Horns': '#8B4513', 'Cogs': '#808080', 'Rays': '#FFFF00',
     'Dust': '#808080', 'Mists': '#FFFFFF', 'Roses': '#FF0000', 'Thorns': '#8B4513', 'Paws': '#8B4513', 'Hooves': '#808080',
-    'Antlers': '#FFFFFF', 'Shells': '#FFFFFF', 'Fins': '#1E90FF', 'Stalks': '#228B22', 'Seeds': '#8B4513', 'Pods': '#228B22',
-    'Stars2': '#FFFF00', 'Moons2': '#1E90FF', 'Crowns2': '#FFD700', 'Leaves2': '#228B22', 'Suns2': '#FFA500', 'Waves2': '#1E90FF',
-    'Shields2': '#808080', 'Orbs2': '#800080', 'Axes2': '#8B4513', 'Spears2': '#C0C0C0', 'Rings2': '#FFD700'
+    'Antlers': '#FFFFFF', 'Shells': '#FFFFFF', 'Fins': '#1E90FF', 'Stalks': '#228B22', 'Seeds': '#8B4513', 'Pods': '#228B22'
 }
 base_ranks = [
     '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A',
