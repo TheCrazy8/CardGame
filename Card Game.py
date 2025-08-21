@@ -442,7 +442,6 @@ def get_image_dir():
         return os.path.join(sys._MEIPASS, 'images')
     else:
         # Normal: images in script directory
-        os.path.join(os.path.dirname(__file__), 'images')
         return os.path.join(os.path.dirname(__file__), 'images')
 
 IMAGE_DIR = get_image_dir()
