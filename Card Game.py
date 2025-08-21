@@ -479,31 +479,33 @@ def load_card_image(card_name):
             font = ImageFont.truetype('arial.ttf', font_size)
         except Exception:
             font = ImageFont.load_default()
-        # Suit symbol mapping
+        # Suit symbol mapping (only Unicode symbols, no emoji)
         suit_symbols = {
             'Hearts': '♥', 'Diamonds': '♦', 'Clubs': '♣', 'Spades': '♠',
-            'Stars': '★', 'Moons': '☾', 'Crowns': '👑', 'Leaves': '🍃', 'Suns': '☀', 'Waves': '🌊',
-            'Shields': '🛡', 'Orbs': '⚪', 'Axes': '🪓', 'Spears': '⚔', 'Rings': '💍', 'Cups': '🍷',
-            'Scrolls': '📜', 'Keys': '🔑', 'Masks': '🎭', 'Fangs': '🦷', 'Eyes': '👁', 'Wings': '🪽',
-            'Roots': '🌱', 'Flames': '🔥', 'Clouds': '☁', 'Stones': '🪨', 'Webs': '🕸', 'Beams': '🔆',
-            'Echoes': '🔊', 'Frost': '❄', 'Petals': '🌸', 'Coins': '🪙', 'Swords': '🗡', 'Helms': '🪖',
-            'Lanterns': '🏮', 'Talons': '🦅', 'Scales': '⚖', 'Spirals': '🌀', 'Comets': '☄', 'Vines': '🌿',
-            'Crystals': '🔮', 'Mirrors': '🪞', 'Bells': '🔔', 'Horns': '📯', 'Cogs': '⚙', 'Rays': '🌟',
-            'Dust': '🌫', 'Mists': '🌁', 'Roses': '🌹', 'Thorns': '🌵', 'Paws': '🐾', 'Hooves': '🐴',
-            'Antlers': '🦌', 'Shells': '🐚', 'Fins': '🐟', 'Stalks': '🌾', 'Seeds': '🌰', 'Pods': '🫛'
+            'Stars': '★', 'Moons': '☾', 'Crowns': '♛', 'Leaves': '♣', 'Suns': '☼', 'Waves': '≈',
+            'Shields': '⛨', 'Orbs': '◉', 'Axes': '⛏', 'Spears': '⚔', 'Rings': '◯', 'Cups': '☕',
+            'Scrolls': '✉', 'Keys': '⚿', 'Masks': '☻', 'Fangs': '∇', 'Eyes': '◉', 'Wings': '⚚',
+            'Roots': '♣', 'Flames': '♨', 'Clouds': '☁', 'Stones': '⬥', 'Webs': '⌘', 'Beams': '≡',
+            'Echoes': '♪', 'Frost': '❄', 'Petals': '✿', 'Coins': '◉', 'Swords': '⚔', 'Helms': '⛑',
+            'Lanterns': '☼', 'Talons': '⚡', 'Scales': '⚖', 'Spirals': '➰', 'Comets': '☄', 'Vines': '♣',
+            'Crystals': '♦', 'Mirrors': '◊', 'Bells': '🔔', 'Horns': '♯', 'Cogs': '⚙', 'Rays': '☀',
+            'Dust': '⋱', 'Mists': '〰', 'Roses': '✾', 'Thorns': '†', 'Paws': '☸', 'Hooves': '∩',
+            'Antlers': '∩', 'Shells': '◗', 'Fins': '∫', 'Stalks': '∣', 'Seeds': '•', 'Pods': '◉'
         }
-        # Draw rank top left
-        draw.text((10, 10), str(rank), font=font, fill=color)
-        # Draw suit symbol bottom right
+        # Draw suit symbol top left, then rank next to it
         if suit:
             symbol = suit_symbols.get(suit, '?')
-            draw.text((CARD_IMAGE_SIZE[0]-font_size-10, CARD_IMAGE_SIZE[1]-font_size-10), symbol, font=font, fill=color)
+            draw.text((10, 10), symbol, font=font, fill=color)
+            draw.text((10 + font_size + 5, 10), str(rank), font=font, fill=color)
             # Optionally, draw suit name below symbol (smaller font)
             try:
                 small_font = ImageFont.truetype('arial.ttf', 16)
             except Exception:
                 small_font = ImageFont.load_default()
-            draw.text((CARD_IMAGE_SIZE[0]-font_size-10, CARD_IMAGE_SIZE[1]-font_size), suit, font=small_font, fill=color)
+            draw.text((10, 10 + font_size + 2), suit, font=small_font, fill=color)
+        else:
+            # For specials, just draw rank top left
+            draw.text((10, 10), str(rank), font=font, fill=color)
         # Center delta symbol if rank is delta
         if rank == 'Δ':
             draw.text((CARD_IMAGE_SIZE[0]//2-10, CARD_IMAGE_SIZE[1]//2-10), 'Δ', font=font, fill=color)
