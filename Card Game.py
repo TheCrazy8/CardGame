@@ -682,44 +682,42 @@ def draw_card():
 
     # Build a string with each card on a new line
     result_text = "Drawn cards:\n" + "\n".join([f"{card}" for card in drawn_cards])
-    # Use tk.Text widget for colored text
-    if not hasattr(root, 'result_text_widget'):
-        root.result_text_widget = tk.Text(root, height=8, width=60, font=('Arial', 14), bg=root.cget('bg'), bd=0, highlightthickness=0)
-        root.result_text_widget.pack(pady=10)
-        result_label.pack_forget()
-    text_widget = root.result_text_widget
-    text_widget.config(state='normal')
-    text_widget.delete('1.0', tk.END)
-    text_widget.insert(tk.END, "Drawn cards:\n")
-    # Draw each card line with a high-contrast outline for visibility
+    # Use Canvas for true outlined text
+    if hasattr(root, 'result_text_widget'):
+        root.result_text_widget.destroy()
+    root.result_text_widget = tk.Canvas(root, width=700, height=220, bg=root.cget('bg'), highlightthickness=0, bd=0)
+    root.result_text_widget.pack(pady=10)
+    result_label.pack_forget()
+    canvas = root.result_text_widget
+    y = 10
+    canvas.create_text(10, y, text="Drawn cards:", anchor='nw', font=('Arial', 14, 'bold'), fill='#FFFFFF')
+    y += 28
+    def get_outline_color(hex_color):
+        hex_color = hex_color.lstrip('#')
+        if len(hex_color) == 3:
+            hex_color = ''.join([c*2 for c in hex_color])
+        r, g, b = tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
+        brightness = (r*299 + g*587 + b*114) / 1000
+        return '#FFFFFF' if brightness < 128 else '#000000'
     for idx, (card, suit, color) in enumerate(drawn_cards_colored):
-        tag_main = f'card_{idx}_main'
-        tag_outline = f'card_{idx}_outline'
-        # Choose outline color based on main color brightness
-        def get_outline_color(hex_color):
-            # Convert hex to RGB
-            hex_color = hex_color.lstrip('#')
-            if len(hex_color) == 3:
-                hex_color = ''.join([c*2 for c in hex_color])
-            r, g, b = tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
-            # Perceived brightness
-            brightness = (r*299 + g*587 + b*114) / 1000
-            return '#FFFFFF' if brightness < 128 else '#000000'
         outline_color = get_outline_color(color)
-        # Insert outline text (simulate outline by inserting same text offset by 1 space, then main text)
-        text_widget.insert(tk.END, f" {card}\n", tag_outline)
-        text_widget.tag_config(tag_outline, foreground=outline_color)
-        text_widget.insert(tk.END, f"{card}\n", tag_main)
-        text_widget.tag_config(tag_main, foreground=color)
+        # Draw outline by drawing text at offsets
+        for dx, dy in [(-1,0),(1,0),(0,-1),(0,1),(-1,-1),(1,1),(-1,1),(1,-1)]:
+            canvas.create_text(20+dx, y+dy, text=card, anchor='nw', font=('Arial', 14, 'bold'), fill=outline_color)
+        canvas.create_text(20, y, text=card, anchor='nw', font=('Arial', 14, 'bold'), fill=color)
+        y += 28
     # Add ace message
     if ace_count > 0:
-        text_widget.insert(tk.END, f"{ace_count} Ace(s) drawn! Total multiplied by {ace_multiplier}.\n", 'ace')
-        text_widget.tag_config('ace', foreground='#FFD700')
+        for dx, dy in [(-1,0),(1,0),(0,-1),(0,1),(-1,-1),(1,1),(-1,1),(1,-1)]:
+            canvas.create_text(20+dx, y+dy, text=f"{ace_count} Ace(s) drawn! Total multiplied by {ace_multiplier}.", anchor='nw', font=('Arial', 14, 'bold'), fill='#000000')
+        canvas.create_text(20, y, text=f"{ace_count} Ace(s) drawn! Total multiplied by {ace_multiplier}.", anchor='nw', font=('Arial', 14, 'bold'), fill='#FFD700')
+        y += 28
     # Add each special message on its own line
     for msg in special_messages:
-        text_widget.insert(tk.END, msg + "\n", 'special')
-    text_widget.tag_config('special', foreground='#FFFFFF')
-    text_widget.config(state='disabled')
+        for dx, dy in [(-1,0),(1,0),(0,-1),(0,1),(-1,-1),(1,1),(-1,1),(1,-1)]:
+            canvas.create_text(20+dx, y+dy, text=msg, anchor='nw', font=('Arial', 14, 'bold'), fill='#000000')
+        canvas.create_text(20, y, text=msg, anchor='nw', font=('Arial', 14, 'bold'), fill='#FFFFFF')
+        y += 28
 
     total_label.config(text=f'Total: {total_count}')
     next_upgrade_discount = 1.0
