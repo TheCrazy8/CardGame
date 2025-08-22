@@ -18,7 +18,8 @@ PyInstaller.__main__.run([
 '"C:\Users\s977168\Downloads\Card Game.py"',
 '--onefile',
 '--windowed',
-'--icon=icon.ico',
+'--icon=icon2.ico',
 '--add-data "images;images"',
-'--add-data "credentials.json;."'
+'--add-data "card_game_saves.json;."',
+'--add-data "card_game_leaderboard.json;."',
 ])
