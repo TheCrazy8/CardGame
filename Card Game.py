@@ -848,8 +848,8 @@ def save_progress():
         'ranks': ranks,
         'specials': list(specials.keys()),
         'skills': skills,
-    'prestige_count': prestige_count,
-    'prestige_bonus': prestige_bonus,
+        'prestige_count': prestige_count,
+        'prestige_bonus': prestige_bonus,
     }
     with open(get_save_path(), 'w') as f:
         json.dump(data, f)
@@ -873,8 +873,8 @@ def load_progress():
         ranks = data.get('ranks', [base_ranks[0]])
         specials = {name: special_abilities[name] for name in data.get('specials', []) if name in special_abilities}
         skills.update(data.get('skills', {}))
-    prestige_count = data.get('prestige_count', 0)
-    prestige_bonus = data.get('prestige_bonus', 0.0)
+        prestige_count = data.get('prestige_count', 0)
+        prestige_bonus = data.get('prestige_bonus', 0.0)
     # Ensure combo_multiplier includes prestige bonus
     skills['combo_multiplier'] = 1 + prestige_bonus
     rebuild_deck()
@@ -885,7 +885,7 @@ def reset_save():
     # Reset game state to defaults
     global total_count, draw_count, ace_multiplier
     global suit_upgrade_level, rank_upgrade_level, special_upgrade_level, draw_upgrade_level
-    global suits, ranks, specials, skills
+    global suits, ranks, specials, skills, prestige_count, prestige_bonus
     total_count = 0
     draw_count = 1
     ace_multiplier = 1
@@ -901,6 +901,8 @@ def reset_save():
         'upgrade_discount': 1.0,
         'special_chance': 0.05,
     }
+    prestige_count = 0
+    prestige_bonus = 0.0
     rebuild_deck()
     update_upgrade_buttons()
     total_label.config(text='Total: 0')
