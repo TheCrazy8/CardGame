@@ -6,7 +6,6 @@ import sv_ttk
 import json
 import os
 import sys
-import re
 from PIL import Image, ImageTk, ImageDraw, ImageFont
 
 
@@ -90,7 +89,7 @@ deck = build_deck()
 
 # Card value lookup
 rank_values = {str(i): i for i in range(2, 11)}
-rank_values.update({'J': 11, 'Q': 12, 'K': 13, 'A': 14, '1': 1})
+rank_values.update({'J': 11, 'Q': 12, 'K': 13, 'A': 14, '1': 1, 'Δ': 15})
 
 # Special card abilities
 special_card_pool = [
