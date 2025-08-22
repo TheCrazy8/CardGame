@@ -583,19 +583,29 @@ def open_card_gallery():
     frame.update_idletasks()
     canvas.config(scrollregion=canvas.bbox('all'))
 
-# Leaderboard file
-LEADERBOARD_FILE = 'card_game_leaderboard.json'
+
+# Helper to get leaderboard file path compatible with PyInstaller
+def get_leaderboard_path():
+    if hasattr(sys, '_MEIPASS'):
+        # PyInstaller: save in user home directory
+        return os.path.join(os.path.expanduser('~'), 'card_game_leaderboard.json')
+    else:
+        # Normal: save in current directory
+        return 'card_game_leaderboard.json'
+
 
 # Helper to load leaderboard
 def load_leaderboard():
-    if os.path.exists(LEADERBOARD_FILE):
-        with open(LEADERBOARD_FILE, 'r', encoding='utf-8') as f:
+    path = get_leaderboard_path()
+    if os.path.exists(path):
+        with open(path, 'r', encoding='utf-8') as f:
             return json.load(f)
     return []
 
 # Helper to save leaderboard
 def save_leaderboard(scores):
-    with open(LEADERBOARD_FILE, 'w', encoding='utf-8') as f:
+    path = get_leaderboard_path()
+    with open(path, 'w', encoding='utf-8') as f:
         json.dump(scores, f)
 
 # Add score to leaderboard
