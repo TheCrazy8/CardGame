@@ -305,7 +305,7 @@ BASE_COSTS = {
     'suit': 10,
     'rank': 10,
     'special': 15,
-    'draw': 20
+    'draw': 50
 }
 suit_upgrade_level = 0
 rank_upgrade_level = 0
