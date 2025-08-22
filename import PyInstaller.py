@@ -15,7 +15,7 @@ print(f"Successfully navigated to: {os.getcwd()}")
 
 # Run the script to make Python file into an EXE file
 PyInstaller.__main__.run([
-'"C:\Users\s977168\Downloads\Card Game.py"',
+'"Card Game.py"',
 '--onefile',
 '--windowed',
 '--icon=icon2.ico',
