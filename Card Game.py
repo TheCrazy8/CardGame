@@ -363,7 +363,7 @@ def add_rank(_=None):
             rank_values[new_rank] = int(new_rank)
             value_text = f"Value: {int(new_rank)}"
         except ValueError:
-            face_values = {'J': 11, 'Q': 12, 'K': 13, 'A': 14, 'Z': 15, 'X': 16, 'M': 17, 'P': 18, 'R': 19, 'S': 20}
+            face_values = {'J': 11, 'Q': 12, 'K': 13, 'A': 14, 'Δ': 15}
             rank_values[new_rank] = face_values.get(new_rank, 15)
             value_text = f"Value: {rank_values[new_rank]}"
         rank_upgrade_level += 1
@@ -395,13 +395,15 @@ def add_special_card():
 def upgrade_draw_count():
     global draw_count, draw_upgrade_level
     cost = get_upgrade_cost('draw', draw_upgrade_level)
-    if spend_total(cost):
+    if spend_total(cost) and draw_count < 4:  # Limit max draw count to 4
         prev_draw = draw_count
         draw_count += 1
         draw_upgrade_level += 1
         draw_count_label.config(text=f'Cards per draw: {draw_count}')
         result_label.config(text=f'Upgrade: Draw count increased!\nPrevious: {prev_draw}\nNow: {draw_count}\nNext draw cost: {get_upgrade_cost("draw", draw_upgrade_level)}')
         update_upgrade_buttons()
+    else:
+        result_label.config(text='Max draw count reached or not enough total!')
 
 def rebuild_deck():
     global deck
