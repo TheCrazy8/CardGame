@@ -235,6 +235,43 @@ skills = {
     # Add more skills as needed
 }
 
+# Prestige system variables
+prestige_count = 0
+prestige_bonus = 0.0  # e.g., permanent combo multiplier bonus
+PRESTIGE_THRESHOLD = 10000  # Total required to prestige
+
+def prestige():
+    global total_count, draw_count, ace_multiplier, shield_active
+    global suit_upgrade_level, rank_upgrade_level, special_upgrade_level, draw_upgrade_level
+    global suits, ranks, specials, skills, prestige_count, prestige_bonus
+    if total_count < PRESTIGE_THRESHOLD:
+        result_label.config(text=f'Need {PRESTIGE_THRESHOLD} total to prestige!')
+        return
+    prestige_count += 1
+    prestige_bonus += 0.1  # Each prestige adds +0.1 to combo multiplier
+    # Reset game state to defaults
+    total_count = 0
+    draw_count = 1
+    ace_multiplier = 1
+    shield_active = False
+    suit_upgrade_level = 0
+    rank_upgrade_level = 0
+    special_upgrade_level = 0
+    draw_upgrade_level = 0
+    suits = [base_suits[0]]
+    ranks = [base_ranks[0]]
+    specials = {}
+    skills = {
+        'combo_multiplier': 1 + prestige_bonus,
+        'upgrade_discount': 1.0,
+        'special_chance': 0.05,
+    }
+    rebuild_deck()
+    update_upgrade_buttons()
+    total_label.config(text='Total: 0')
+    draw_count_label.config(text='Cards per draw: 1')
+    result_label.config(text=f'Prestiged! Combo Multiplier bonus: +{prestige_bonus:.1f} (Prestige count: {prestige_count})')
+
 def open_skill_tree():
     skill_win = tk.Toplevel(root)
     skill_win.title('Skill Tree')
@@ -803,7 +840,6 @@ def save_progress():
         'total_count': total_count,
         'draw_count': draw_count,
         'ace_multiplier': ace_multiplier,
-        'shield_active': shield_active,
         'suit_upgrade_level': suit_upgrade_level,
         'rank_upgrade_level': rank_upgrade_level,
         'special_upgrade_level': special_upgrade_level,
@@ -812,14 +848,16 @@ def save_progress():
         'ranks': ranks,
         'specials': list(specials.keys()),
         'skills': skills,
+    'prestige_count': prestige_count,
+    'prestige_bonus': prestige_bonus,
     }
     with open(get_save_path(), 'w') as f:
         json.dump(data, f)
 
 def load_progress():
-    global total_count, draw_count, ace_multiplier, shield_active
+    global total_count, draw_count, ace_multiplier
     global suit_upgrade_level, rank_upgrade_level, special_upgrade_level, draw_upgrade_level
-    global suits, ranks, specials, skills
+    global suits, ranks, specials, skills, prestige_count, prestige_bonus
     path = get_save_path()
     if os.path.exists(path):
         with open(path, 'r') as f:
@@ -827,7 +865,6 @@ def load_progress():
         total_count = data.get('total_count', 0)
         draw_count = data.get('draw_count', 1)
         ace_multiplier = data.get('ace_multiplier', 1)
-        shield_active = data.get('shield_active', False)
         suit_upgrade_level = data.get('suit_upgrade_level', 0)
         rank_upgrade_level = data.get('rank_upgrade_level', 0)
         special_upgrade_level = data.get('special_upgrade_level', 0)
@@ -836,19 +873,22 @@ def load_progress():
         ranks = data.get('ranks', [base_ranks[0]])
         specials = {name: special_abilities[name] for name in data.get('specials', []) if name in special_abilities}
         skills.update(data.get('skills', {}))
-        rebuild_deck()
+    prestige_count = data.get('prestige_count', 0)
+    prestige_bonus = data.get('prestige_bonus', 0.0)
+    # Ensure combo_multiplier includes prestige bonus
+    skills['combo_multiplier'] = 1 + prestige_bonus
+    rebuild_deck()
 
 def reset_save():
     if os.path.exists(get_save_path()):
         os.remove(get_save_path())
     # Reset game state to defaults
-    global total_count, draw_count, ace_multiplier, shield_active
+    global total_count, draw_count, ace_multiplier
     global suit_upgrade_level, rank_upgrade_level, special_upgrade_level, draw_upgrade_level
     global suits, ranks, specials, skills
     total_count = 0
     draw_count = 1
     ace_multiplier = 1
-    shield_active = False
     suit_upgrade_level = 0
     rank_upgrade_level = 0
     special_upgrade_level = 0
@@ -903,6 +943,14 @@ load_btn = ttk.Button(title_bar, text='Load', style='TitleBar.TButton', command=
 load_btn.pack(side='left', padx=5)
 reset_btn = ttk.Button(title_bar, text='Reset', style='TitleBar.TButton', command=reset_save)
 reset_btn.pack(side='left', padx=5)
+
+# Prestige button
+def show_prestige_info():
+    result_label.config(text=f'Prestige: {prestige_count} | Combo Multiplier Bonus: +{prestige_bonus:.1f}')
+prestige_btn = ttk.Button(title_bar, text='Prestige', style='TitleBar.TButton', command=prestige)
+prestige_btn.pack(side='left', padx=5)
+prestige_info_btn = ttk.Button(title_bar, text='Prestige Info', style='TitleBar.TButton', command=show_prestige_info)
+prestige_info_btn.pack(side='left', padx=5)
 
 # Clock label (rightmost)
 clock_label = ttk.Label(title_bar, style='TitleBar.TLabel')
