@@ -395,7 +395,7 @@ def add_special_card():
 def upgrade_draw_count():
     global draw_count, draw_upgrade_level
     cost = get_upgrade_cost('draw', draw_upgrade_level)
-    if spend_total(cost) and draw_count < 4:  # Limit max draw count to 4
+    if spend_total(cost) and draw_upgrade_level < 4:  # Limit max draw count to 4
         prev_draw = draw_count
         draw_count += 1
         draw_upgrade_level += 1
@@ -403,7 +403,7 @@ def upgrade_draw_count():
         result_label.config(text=f'Upgrade: Draw count increased!\nPrevious: {prev_draw}\nNow: {draw_count}\nNext draw cost: {get_upgrade_cost("draw", draw_upgrade_level)}')
         update_upgrade_buttons()
     else:
-        result_label.config(text='Max draw count reached or not enough total!')
+        result_label.config(text='Max draw count reached!')
 
 def rebuild_deck():
     global deck
