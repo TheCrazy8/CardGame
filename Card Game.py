@@ -49,7 +49,6 @@ specials = base_specials.copy()
 total_count = 0
 draw_count = 1  # Number of cards drawn per click
 ace_multiplier = 1  # Multiplier for Ace effect
-shield_active = False
 
 # Percentages for drawing normal vs special cards
 NORMAL_CARD_CHANCE = 0.95  # 95% chance to draw a normal card
