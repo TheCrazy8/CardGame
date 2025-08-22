@@ -19,7 +19,7 @@ PyInstaller.__main__.run([
 '--onefile',
 '--windowed',
 '--icon=icon2.ico',
-'--add-data "images;images"',
-'--add-data "card_game_saves.json;."',
-'--add-data "card_game_leaderboard.json;."',
+'--add-data "images:images"',
+'--add-data "card_game_saves.json:."',
+'--add-data "card_game_leaderboard.json:."',
 ])
