@@ -971,6 +971,45 @@ def reset_save():
     draw_count_label.config(text='Cards per draw: 1')
     result_label.config(text='Progress reset!')
 
+def open_card_upgrade_window():
+    win = tk.Toplevel(root)
+    win.title('Upgrade Cards')
+    win.geometry('500x600')
+    ttk.Label(win, text='Upgrade Cards', font=('Arial', 16)).pack(pady=10)
+    frame = ttk.Frame(win)
+    frame.pack(fill='both', expand=True)
+    # List all unlocked cards
+    cards = [f'{rank} of {suit}' for suit in suits for rank in ranks]
+    for idx, card in enumerate(cards):
+        upgrade_level = card_upgrades.get(card, 0)
+        img = load_card_image(card)
+        # Add a gold border if upgraded
+        if upgrade_level > 0:
+            pil_img = ImageTk.getimage(img).copy()
+            draw = ImageDraw.Draw(pil_img)
+            draw.rectangle([2,2,CARD_IMAGE_SIZE[0]-4,CARD_IMAGE_SIZE[1]-4], outline='#FFD700', width=6)
+            img = ImageTk.PhotoImage(pil_img)
+        lbl = ttk.Label(frame, image=img)
+        lbl.image = img
+        lbl.grid(row=idx//4*2, column=idx%4, padx=8, pady=8)
+        info = f'{card} (Lv {upgrade_level})'
+        ttk.Label(frame, text=info, font=('Arial', 10)).grid(row=idx//4*2+1, column=idx%4)
+        def make_upgrade(card=card):
+            def upgrade():
+                cost = 100 * (card_upgrades.get(card, 0) + 1)
+                global total_count
+                if total_count >= cost:
+                    card_upgrades[card] = card_upgrades.get(card, 0) + 1
+                    win.destroy()
+                    open_card_upgrade_window()
+                    total_count -= cost
+                    total_label.config(text=f'Total: {total_count}')
+                else:
+                    result_label.config(text=f'Not enough total! Need {cost}.')
+            return upgrade
+        btn = ttk.Button(frame, text=f'Upgrade ({100 * (upgrade_level+1)})', command=make_upgrade())
+        btn.grid(row=idx//4*2+2, column=idx%4, pady=2)
+
 # Custom title bar
 bar_height = 40
 bar_bg = '#222'
@@ -1128,45 +1167,6 @@ root.bind('<space>', on_spacebar)
 
 # Card upgrade system
 card_upgrades = {}  # e.g., {'A of Hearts': 1, ...}
-
-def open_card_upgrade_window():
-    win = tk.Toplevel(root)
-    win.title('Upgrade Cards')
-    win.geometry('500x600')
-    ttk.Label(win, text='Upgrade Cards', font=('Arial', 16)).pack(pady=10)
-    frame = ttk.Frame(win)
-    frame.pack(fill='both', expand=True)
-    # List all unlocked cards
-    cards = [f'{rank} of {suit}' for suit in suits for rank in ranks]
-    for idx, card in enumerate(cards):
-        upgrade_level = card_upgrades.get(card, 0)
-        img = load_card_image(card)
-        # Add a gold border if upgraded
-        if upgrade_level > 0:
-            pil_img = ImageTk.getimage(img).copy()
-            draw = ImageDraw.Draw(pil_img)
-            draw.rectangle([2,2,CARD_IMAGE_SIZE[0]-4,CARD_IMAGE_SIZE[1]-4], outline='#FFD700', width=6)
-            img = ImageTk.PhotoImage(pil_img)
-        lbl = ttk.Label(frame, image=img)
-        lbl.image = img
-        lbl.grid(row=idx//4*2, column=idx%4, padx=8, pady=8)
-        info = f'{card} (Lv {upgrade_level})'
-        ttk.Label(frame, text=info, font=('Arial', 10)).grid(row=idx//4*2+1, column=idx%4)
-        def make_upgrade(card=card):
-            def upgrade():
-                cost = 100 * (card_upgrades.get(card, 0) + 1)
-                global total_count
-                if total_count >= cost:
-                    card_upgrades[card] = card_upgrades.get(card, 0) + 1
-                    win.destroy()
-                    open_card_upgrade_window()
-                    total_count -= cost
-                    total_label.config(text=f'Total: {total_count}')
-                else:
-                    result_label.config(text=f'Not enough total! Need {cost}.')
-            return upgrade
-        btn = ttk.Button(frame, text=f'Upgrade ({100 * (upgrade_level+1)})', command=make_upgrade())
-        btn.grid(row=idx//4*2+2, column=idx%4, pady=2)
 
 # Helper to get card upgrade bonus
 def get_card_upgrade_bonus(card):
