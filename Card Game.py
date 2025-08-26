@@ -677,22 +677,20 @@ def draw_card():
                 card = random.choice([f'{rank} of {suit}' for suit in suits for rank in ranks])
                 drawn_cards.append(card)
                 rank = card.split(' ')[0]
-                upgrade_lv = card_upgrades.get(card, 0)
                 if rank == 'A':
                     ace_count += 1
                 if rank in rank_values:
-                    value_sum += rank_values[rank] + 10 * upgrade_lv
+                    value_sum += rank_values[rank]
                 last_drawn = card
         elif deck:
             card = random.choice([f'{rank} of {suit}' for suit in suits for rank in ranks])
             drawn_cards.append(card)
             rank = card.split(' ')[0]
             suit = card.split(' ')[-1]
-            upgrade_lv = card_upgrades.get(card, 0)
             if rank == 'A':
                 ace_count += 1
             if rank in rank_values:
-                value_sum += rank_values[rank] + 10 * upgrade_lv
+                value_sum += rank_values[rank]
             # Suit effects
             if suit in suit_effects:
                 msg = suit_effects[suit]()
@@ -896,7 +894,7 @@ def get_save_path():
 
 SAVE_FILE = 'card_game_save.json'
 
-# Update save/load/reset functions to use get_save_path()
+# Update save/load functions to use get_save_path()
 def save_progress():
     data = {
         'total_count': total_count,
@@ -971,45 +969,6 @@ def reset_save():
     draw_count_label.config(text='Cards per draw: 1')
     result_label.config(text='Progress reset!')
 
-def open_card_upgrade_window():
-    win = tk.Toplevel(root)
-    win.title('Upgrade Cards')
-    win.geometry('500x600')
-    ttk.Label(win, text='Upgrade Cards', font=('Arial', 16)).pack(pady=10)
-    frame = ttk.Frame(win)
-    frame.pack(fill='both', expand=True)
-    # List all unlocked cards
-    cards = [f'{rank} of {suit}' for suit in suits for rank in ranks]
-    for idx, card in enumerate(cards):
-        upgrade_level = card_upgrades.get(card, 0)
-        img = load_card_image(card)
-        # Add a gold border if upgraded
-        if upgrade_level > 0:
-            pil_img = ImageTk.getimage(img).copy()
-            draw = ImageDraw.Draw(pil_img)
-            draw.rectangle([2,2,CARD_IMAGE_SIZE[0]-4,CARD_IMAGE_SIZE[1]-4], outline='#FFD700', width=6)
-            img = ImageTk.PhotoImage(pil_img)
-        lbl = ttk.Label(frame, image=img)
-        lbl.image = img
-        lbl.grid(row=idx//4*2, column=idx%4, padx=8, pady=8)
-        info = f'{card} (Lv {upgrade_level})'
-        ttk.Label(frame, text=info, font=('Arial', 10)).grid(row=idx//4*2+1, column=idx%4)
-        def make_upgrade(card=card):
-            def upgrade():
-                cost = 100 * (card_upgrades.get(card, 0) + 1)
-                global total_count
-                if total_count >= cost:
-                    card_upgrades[card] = card_upgrades.get(card, 0) + 1
-                    win.destroy()
-                    open_card_upgrade_window()
-                    total_count -= cost
-                    total_label.config(text=f'Total: {total_count}')
-                else:
-                    result_label.config(text=f'Not enough total! Need {cost}.')
-            return upgrade
-        btn = ttk.Button(frame, text=f'Upgrade ({100 * (upgrade_level+1)})', command=make_upgrade())
-        btn.grid(row=idx//4*2+2, column=idx%4, pady=2)
-
 # Custom title bar
 bar_height = 40
 bar_bg = '#222'
@@ -1054,10 +1013,6 @@ prestige_btn = ttk.Button(title_bar, text='Prestige', style='TitleBar.TButton', 
 prestige_btn.pack(side='left', padx=5)
 prestige_info_btn = ttk.Button(title_bar, text='Prestige Info', style='TitleBar.TButton', command=show_prestige_info)
 prestige_info_btn.pack(side='left', padx=5)
-
-# Add Card Upgrade button to title bar
-upgrade_cards_btn = ttk.Button(title_bar, text='Upgrade Cards', style='TitleBar.TButton', command=open_card_upgrade_window)
-upgrade_cards_btn.pack(side='left', padx=5)
 
 # Clock label (rightmost)
 clock_label = ttk.Label(title_bar, style='TitleBar.TLabel')
@@ -1165,333 +1120,4 @@ def on_spacebar(event):
 
 root.bind('<space>', on_spacebar)
 
-# Card upgrade system
-card_upgrades = {}  # e.g., {'A of Hearts': 1, ...}
-
-# Helper to get card upgrade bonus
-def get_card_upgrade_bonus(card):
-    level = card_upgrades.get(card, 0)
-    return 10 * level  # e.g., +10 per level
-
-# Helper to get total upgrade cost for a card
-def get_total_upgrade_cost(card):
-    level = card_upgrades.get(card, 0)
-    return 100 * (level + 1)  # e.g., 100 for first upgrade, 200 for second, etc.
-
-# Modify draw_card to include upgrade bonuses
-def draw_card():
-    global total_count, ace_multiplier, combo_history, next_upgrade_discount, extra_draw_next
-    drawn_cards = []
-    ace_count = 0
-    value_sum = 0
-    special_messages = []
-    combo_applied = False
-    draw_times = draw_count + (1 if extra_draw_next else 0)
-    extra_draw_next = False
-    last_drawn = None
-    for _ in range(draw_times):
-        if random.random() < (skills.get('special_chance', SPECIAL_CARD_CHANCE)) and specials:
-            # Draw a special card by weighted chance
-            special_name = pick_special_card()
-            if special_name in specials:
-                drawn_cards.append(special_name)
-                msg = special_abilities[special_name]()
-                special_messages.append(msg)
-                last_drawn = special_name
-            else:
-                card = random.choice([f'{rank} of {suit}' for suit in suits for rank in ranks])
-                drawn_cards.append(card)
-                rank = card.split(' ')[0]
-                upgrade_lv = card_upgrades.get(card, 0)
-                if rank == 'A':
-                    ace_count += 1
-                if rank in rank_values:
-                    value_sum += rank_values[rank] + 10 * upgrade_lv
-                last_drawn = card
-        elif deck:
-            card = random.choice([f'{rank} of {suit}' for suit in suits for rank in ranks])
-            drawn_cards.append(card)
-            rank = card.split(' ')[0]
-            suit = card.split(' ')[-1]
-            upgrade_lv = card_upgrades.get(card, 0)
-            if rank == 'A':
-                ace_count += 1
-            if rank in rank_values:
-                value_sum += rank_values[rank] + 10 * upgrade_lv
-            # Suit effects
-            if suit in suit_effects:
-                msg = suit_effects[suit]()
-                special_messages.append(msg)
-            # Skill: Hearts bonus
-            if suit == 'Hearts' and skills.get('hearts_bonus', 0) > 0:
-                total_count += skills['hearts_bonus']
-                special_messages.append(f'Hearts bonus! +{skills["hearts_bonus"]}')
-            last_drawn = card
-        else:
-            break
-    ace_multiplier = 2 ** ace_count if ace_count > 0 else 1
-    total_count += value_sum * ace_multiplier
-    # Combo bonus check
-    COMBO_SIZE = skills.get('combo_size', 3)
-    # Only keep up to COMBO_SIZE-1 cards in history before this draw
-    combo_history = combo_history[-(COMBO_SIZE-1):] + drawn_cards
-    # Check for combos only if combo_history has exactly COMBO_SIZE cards
-    combo_messages = []
-    if len(combo_history) == COMBO_SIZE:
-        last_combo = combo_history[:COMBO_SIZE]
-        suits_in_combo = [c.split(' ')[-1] for c in last_combo if ' ' in c]
-        combo_applied = False
-        if len(set(suits_in_combo)) == 1 and len(suits_in_combo) == COMBO_SIZE:
-            bonus = COMBO_BONUS * skills['combo_multiplier']
-            total_count += bonus
-            combo_messages.append(f'Combo! {COMBO_SIZE} {suits_in_combo[0]} cards: +{bonus}')
-            combo_applied = True
-        colors_in_combo = [suit_colors.get(suit, None) for suit in suits_in_combo]
-        def hex_to_name(hex_code):
-            color_map = {
-                '#FF0000': 'Red', '#222222': 'Black', '#FFFF00': 'Yellow', '#1E90FF': 'Blue', '#FFD700': 'Gold',
-                '#228B22': 'Green', '#FFA500': 'Orange', '#808080': 'Gray', '#800080': 'Purple', '#8B4513': 'Brown',
-                '#C0C0C0': 'Silver', '#F5F5DC': 'Beige', '#CD7F32': 'Bronze', '#FFFFFF': 'White', '#00FFFF': 'Cyan',
-                '#FFC0CB': 'Pink'
-            }
-            return color_map.get(hex_code, hex_code)
-        if len(set(colors_in_combo)) == 1 and None not in colors_in_combo and len(colors_in_combo) == COMBO_SIZE:
-            color_bonus = COLOR_COMBO_BONUS * skills['combo_multiplier']
-            total_count += color_bonus
-            color_name = hex_to_name(colors_in_combo[0])
-            combo_messages.append(f'Color Combo! {COMBO_SIZE} {color_name} cards: +{color_bonus}')
-            combo_applied = True
-        ranks_in_combo = [c.split(' ')[0] for c in last_combo if c.split(' ')[0].isdigit()]
-        if len(ranks_in_combo) == COMBO_SIZE:
-            sorted_ranks = sorted(map(int, ranks_in_combo))
-            if sorted_ranks == list(range(sorted_ranks[0], sorted_ranks[0] + COMBO_SIZE)):
-                bonus = COMBO_BONUS * skills['combo_multiplier']
-                total_count += bonus
-                combo_messages.append(f'Combo! {COMBO_SIZE} consecutive ranks: +{bonus}')
-                combo_applied = True
-        # Remove the combo cards from history if combo applied, else shift window by one
-        if combo_applied:
-            combo_history = []
-        else:
-            combo_history = combo_history[1:]
-        # Show all combo messages immediately
-        for msg in combo_messages:
-            special_messages.append(msg)
-    # Build colored text for drawn cards
-    def get_card_color(card):
-        if card in specials:
-            return '#FFD700'  # Special cards: gold
-        if suit in suit_colors:
-            color = suit_colors.get(suit)
-            if color:
-                return color
-            else:
-                return '#CCCCCC'  # fallback for unknown suit
-        return '#CCCCCC'  # fallback for unknown card
-
-    drawn_cards_colored = []
-    for card in drawn_cards:
-        if card in specials:
-            suit = None
-            color = '#FFD700'  # Special cards: gold
-        else:
-            suit = None
-            # Extract suit by splitting from the right
-            parts = card.rsplit(' of ', 1)
-            if len(parts) == 2:
-                possible_suit = parts[1]
-                if possible_suit in suit_colors:
-                    suit = possible_suit
-                    color = suit_colors[suit]
-                else:
-                    color = '#CCCCCC'
-            else:
-                color = '#CCCCCC'
-        drawn_cards_colored.append((card, suit, color))
-
-    # Build a string with each card on a new line
-    result_text = "Drawn cards:\n" + "\n".join([f"{card}" for card in drawn_cards])
-    # Use Canvas for true outlined text
-    if hasattr(root, 'result_text_widget'):
-        root.result_text_widget.destroy()
-    root.result_text_widget = tk.Canvas(root, width=700, height=220, bg=root.cget('bg'), highlightthickness=0, bd=0)
-    root.result_text_widget.pack(pady=10)
-    result_label.pack_forget()
-    canvas = root.result_text_widget
-    y = 10
-    canvas.create_text(10, y, text="Drawn cards:", anchor='nw', font=('Arial', 14, 'bold'), fill='#FFFFFF')
-    y += 28
-    def get_outline_color(hex_color):
-        hex_color = hex_color.lstrip('#')
-        if len(hex_color) == 3:
-            hex_color = ''.join([c*2 for c in hex_color])
-        r, g, b = tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
-        brightness = (r*299 + g*587 + b*114) / 1000
-        return '#FFFFFF' if brightness < 128 else '#000000'
-    for idx, (card, suit, color) in enumerate(drawn_cards_colored):
-        outline_color = get_outline_color(color)
-        # Draw outline by drawing text at offsets
-        for dx, dy in [(-1,0),(1,0),(0,-1),(0,1),(-1,-1),(1,1),(-1,1),(1,-1)]:
-            canvas.create_text(20+dx, y+dy, text=card, anchor='nw', font=('Arial', 14, 'bold'), fill=outline_color)
-        canvas.create_text(20, y, text=card, anchor='nw', font=('Arial', 14, 'bold'), fill=color)
-        y += 28
-    # Add ace message
-    if ace_count > 0:
-        for dx, dy in [(-1,0),(1,0),(0,-1),(0,1),(-1,-1),(1,1),(-1,1),(1,-1)]:
-            canvas.create_text(20+dx, y+dy, text=f"{ace_count} Ace(s) drawn! Total multiplied by {ace_multiplier}.", anchor='nw', font=('Arial', 14, 'bold'), fill='#000000')
-        canvas.create_text(20, y, text=f"{ace_count} Ace(s) drawn! Total multiplied by {ace_multiplier}.", anchor='nw', font=('Arial', 14, 'bold'), fill='#FFD700')
-        y += 28
-    # Add each special message on its own line
-    for msg in special_messages:
-        for dx, dy in [(-1,0),(1,0),(0,-1),(0,1),(-1,-1),(1,1),(-1,1),(1,-1)]:
-            canvas.create_text(20+dx, y+dy, text=msg, anchor='nw', font=('Arial', 14, 'bold'), fill='#000000')
-        canvas.create_text(20, y, text=msg, anchor='nw', font=('Arial', 14, 'bold'), fill='#FFFFFF')
-        y += 28
-
-    total_label.config(text=f'Total: {total_count}')
-    next_upgrade_discount = 1.0
-    random.shuffle(deck)
-
-    # Card flip animation for each drawn card
-    if hasattr(root, 'card_image_frame'):
-        root.card_image_frame.destroy()
-    root.card_image_frame = ttk.Frame(root)
-    root.card_image_frame.pack(pady=10)
-
-    def flip_card(label, card_name, step=0):
-        # step 0-5: show back, shrink horizontally
-        # step 6: switch to face, expand horizontally
-        if step <= 5:
-            img = load_card_image(card_name, back=True)
-            w = int(CARD_IMAGE_SIZE[0] * (1 - step/5))
-            if w < 10: w = 10
-            pil_img = Image.new('RGBA', (w, CARD_IMAGE_SIZE[1]), (0,0,0,0))
-            back_img = ImageTk.getimage(img).resize((w, CARD_IMAGE_SIZE[1]))
-            pil_img.paste(back_img, (0,0))
-            tk_img = ImageTk.PhotoImage(pil_img)
-            label.config(image=tk_img)
-            label.image = tk_img
-            root.after(30, lambda: flip_card(label, card_name, step+1))
-        elif step == 6:
-            # Switch to face, expand
-            img = load_card_image(card_name)
-            w = 10
-            pil_img = Image.new('RGBA', (w, CARD_IMAGE_SIZE[1]), (0,0,0,0))
-            face_img = ImageTk.getimage(img).resize((w, CARD_IMAGE_SIZE[1]))
-            pil_img.paste(face_img, (0,0))
-            tk_img = ImageTk.PhotoImage(pil_img)
-            label.config(image=tk_img)
-            label.image = tk_img
-            root.after(30, lambda: flip_card(label, card_name, step+7))
-        elif step > 6 and step < 13:
-            img = load_card_image(card_name)
-            w = int(CARD_IMAGE_SIZE[0] * ((step-6)/6))
-            if w > CARD_IMAGE_SIZE[0]: w = CARD_IMAGE_SIZE[0]
-            pil_img = Image.new('RGBA', (w, CARD_IMAGE_SIZE[1]), (0,0,0,0))
-            face_img = ImageTk.getimage(img).resize((w, CARD_IMAGE_SIZE[1]))
-            pil_img.paste(face_img, (0,0))
-            tk_img = ImageTk.PhotoImage(pil_img)
-            label.config(image=tk_img)
-            label.image = tk_img
-            root.after(30, lambda: flip_card(label, card_name, step+1))
-        else:
-            img = load_card_image(card_name)
-            label.config(image=img)
-            label.image = img
-
-    labels = []
-    for idx, card in enumerate(drawn_cards):
-        lbl = ttk.Label(root.card_image_frame)
-        lbl.grid(row=0, column=idx, padx=5)
-        labels.append(lbl)
-    for idx, card in enumerate(drawn_cards):
-        flip_card(labels[idx], card)
-
-    # Optionally, add score to leaderboard
-    add_score_to_leaderboard('Player', total_count)
-
-# Helper to get save path compatible with PyInstaller
-def get_save_path():
-    if hasattr(sys, '_MEIPASS'):
-        # PyInstaller: save in user home directory
-        return os.path.join(os.path.expanduser('~'), 'card_game_save.json')
-    else:
-        # Normal: save in current directory
-        return SAVE_FILE
-
-SAVE_FILE = 'card_game_save.json'
-
-# Update save/load/reset functions to use get_save_path()
-def save_progress():
-    data = {
-        'total_count': total_count,
-        'draw_count': draw_count,
-        'ace_multiplier': ace_multiplier,
-        'suit_upgrade_level': suit_upgrade_level,
-        'rank_upgrade_level': rank_upgrade_level,
-        'special_upgrade_level': special_upgrade_level,
-        'draw_upgrade_level': draw_upgrade_level,
-        'suits': suits,
-        'ranks': ranks,
-        'specials': list(specials.keys()),
-        'skills': skills,
-        'prestige_count': prestige_count,
-        'prestige_bonus': prestige_bonus,
-        'card_upgrades': card_upgrades,  # Save card upgrades
-    }
-    with open(get_save_path(), 'w') as f:
-        json.dump(data, f)
-
-def load_progress():
-    global total_count, draw_count, ace_multiplier
-    global suit_upgrade_level, rank_upgrade_level, special_upgrade_level, draw_upgrade_level
-    global suits, ranks, specials, skills, prestige_count, prestige_bonus, card_upgrades
-    path = get_save_path()
-    if os.path.exists(path):
-        with open(path, 'r') as f:
-            data = json.load(f)
-        total_count = data.get('total_count', 0)
-        draw_count = data.get('draw_count', 1)
-        ace_multiplier = data.get('ace_multiplier', 1)
-        suit_upgrade_level = data.get('suit_upgrade_level', 0)
-        rank_upgrade_level = data.get('rank_upgrade_level', 0)
-        special_upgrade_level = data.get('special_upgrade_level', 0)
-        draw_upgrade_level = data.get('draw_upgrade_level', 0)
-        suits = data.get('suits', [base_suits[0]])
-        ranks = data.get('ranks', [base_ranks[0]])
-        specials = {name: special_abilities[name] for name in data.get('specials', []) if name in special_abilities}
-        skills.update(data.get('skills', {}))
-        prestige_count = data.get('prestige_count', 0)
-        prestige_bonus = data.get('prestige_bonus', 0.0)
-        card_upgrades = data.get('card_upgrades', {})  # Load card upgrades
-    # Ensure combo_multiplier includes prestige bonus
-    skills['combo_multiplier'] = 1 + prestige_bonus
-    rebuild_deck()
-
-def reset_save():
-    if os.path.exists(get_save_path()):
-        os.remove(get_save_path())
-    # Reset game state to defaults
-    global total_count, draw_count, ace_multiplier
-    global suit_upgrade_level, rank_upgrade_level, special_upgrade_level, draw_upgrade_level
-    global suits, ranks, specials, skills, prestige_count, prestige_bonus, card_upgrades
-    total_count = 0
-    draw_count = 1
-    ace_multiplier = 1
-    suit_upgrade_level = 0
-    rank_upgrade_level = 0
-    special_upgrade_level = 0
-    draw_upgrade_level = 0
-    suits = [base_suits[0]]
-    ranks = [base_ranks[0]]
-    specials = {}
-    skills = {
-        'combo_multiplier': 1,
-        'upgrade_discount': 1.0,
-        'special_chance': 0.05,
-    }
-    prestige_count = 0
-    prestige_bonus = 0.0
-    card_upgrades = {}
-    rebuild_deck()
-    update_upgrade_buttons
+root.mainloop()
