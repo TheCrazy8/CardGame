@@ -598,16 +598,37 @@ def open_card_gallery():
             sorted_cards.append(f'{rank} of {suit}')
     # Add specials at the end
     sorted_cards += sorted(list(specials.keys()))
-    # Display images in a grid
+    # Display images in a grid with animated fade-in
     cols = 5
+    gallery_labels = []
     for idx, card in enumerate(sorted_cards):
         img = load_card_image(card)
-        lbl = ttk.Label(frame, image=img)
-        lbl.image = img
+        lbl = ttk.Label(frame)
         lbl.grid(row=idx//cols*2, column=idx%cols, padx=10, pady=10)
+        gallery_labels.append((lbl, card))
         ttk.Label(frame, text=card, font=('Arial', 10)).grid(row=idx//cols*2+1, column=idx%cols, padx=10)
     frame.update_idletasks()
     canvas.config(scrollregion=canvas.bbox('all'))
+
+    def fade_in_gallery(labels, step=0):
+        alpha = int(255 * (step / 10))
+        if alpha > 255:
+            alpha = 255
+        for lbl, card in labels:
+            try:
+                pil_img = Image.open(get_card_image_filename(card)).resize(CARD_IMAGE_SIZE).convert('RGBA')
+                pil_img.putalpha(alpha)
+                tk_img = ImageTk.PhotoImage(pil_img)
+                lbl.config(image=tk_img)
+                lbl.image = tk_img
+            except Exception:
+                img = load_card_image(card)
+                lbl.config(image=img)
+                lbl.image = img
+        if step < 10:
+            gallery_win.after(30, lambda: fade_in_gallery(labels, step+1))
+
+    fade_in_gallery(gallery_labels, 0)
 
 
 # Helper to get leaderboard file path compatible with PyInstaller
