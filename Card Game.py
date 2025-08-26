@@ -469,10 +469,20 @@ def get_card_image_filename(card_name):
 def load_card_image(card_name, back=False):
     """Load card image, or generate. If back=True, generate card back."""
     if back:
-        # Card back procedural design
+        # Try to load card back from images folder
         back_key = 'card_back'
         if back_key in card_images:
             return card_images[back_key]
+        back_path = os.path.join(IMAGE_DIR, 'card_back.png')
+        if os.path.exists(back_path):
+            try:
+                img = Image.open(back_path).resize(CARD_IMAGE_SIZE)
+                photo = ImageTk.PhotoImage(img)
+                card_images[back_key] = photo
+                return photo
+            except Exception:
+                pass
+        # Fallback: procedural card back
         img = Image.new('RGBA', CARD_IMAGE_SIZE, (30,30,60,255))
         draw = ImageDraw.Draw(img)
         for i in range(0, CARD_IMAGE_SIZE[0], 20):
