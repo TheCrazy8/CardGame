@@ -17,8 +17,8 @@ print(f"Successfully navigated to: {os.getcwd()}")
 PyInstaller.__main__.run([
 'Card Game.py',
 '--add-data=C:\Windows\System32\images:images',
-'--add-data=card_game_save:.',
-'--add-data=card_game_leaderboard:.',
+'--add-data=card_game_save.json:.',
+'--add-data=card_game_leaderboard.json:.',
 '--onefile',
 '--windowed',
 '--icon=icon2.ico'
