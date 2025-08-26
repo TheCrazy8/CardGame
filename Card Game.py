@@ -466,8 +466,26 @@ def get_card_image_filename(card_name):
     card_name = card_name.lower()
     return os.path.join(IMAGE_DIR, f'{card_name}.png')
 
-# Helper to load image (with cache)
-def load_card_image(card_name):
+def load_card_image(card_name, back=False):
+    """Load card image, or generate. If back=True, generate card back."""
+    if back:
+        # Card back procedural design
+        back_key = 'card_back'
+        if back_key in card_images:
+            return card_images[back_key]
+        img = Image.new('RGBA', CARD_IMAGE_SIZE, (30,30,60,255))
+        draw = ImageDraw.Draw(img)
+        for i in range(0, CARD_IMAGE_SIZE[0], 20):
+            draw.rectangle([i,0,i+10,CARD_IMAGE_SIZE[1]], fill=(50,50,120,255))
+        draw.rectangle([0,0,CARD_IMAGE_SIZE[0]-1,CARD_IMAGE_SIZE[1]-1], outline=(200,200,255,255), width=6)
+        try:
+            font = ImageFont.truetype('arial.ttf', 48)
+        except Exception:
+            font = ImageFont.load_default()
+        draw.text((CARD_IMAGE_SIZE[0]//2-30, CARD_IMAGE_SIZE[1]//2-24), "★", font=font, fill=(220,220,255,255))
+        photo = ImageTk.PhotoImage(img)
+        card_images[back_key] = photo
+        return photo
     filename = get_card_image_filename(card_name)
     if filename in card_images:
         return card_images[filename]
@@ -477,27 +495,22 @@ def load_card_image(card_name):
         card_images[filename] = photo
         return photo
     except Exception:
-        # Procedurally generate card image
+        # ...existing code for procedural card face...
         img = Image.new('RGBA', CARD_IMAGE_SIZE, (255,255,255,255))
         draw = ImageDraw.Draw(img)
-        # Parse rank and suit
         rank, suit = None, None
         if ' of ' in card_name:
             parts = card_name.split(' of ')
             rank, suit = parts[0], parts[1]
         else:
             rank, suit = card_name, None
-        # Get color
         color = suit_colors.get(suit, '#CCCCCC') if suit else '#FFD700'
-        # Draw border
         draw.rectangle([0,0,CARD_IMAGE_SIZE[0]-1,CARD_IMAGE_SIZE[1]-1], outline=color, width=4)
-        # Draw suit name and symbol
         font_size = 32
         try:
             font = ImageFont.truetype('arial.ttf', font_size)
         except Exception:
             font = ImageFont.load_default()
-        # Suit symbol mapping (only Unicode symbols, no emoji)
         suit_symbols = {
             'Hearts': '♥', 'Diamonds': '♦', 'Clubs': '♣', 'Spades': '♠',
             'Stars': '★', 'Moons': '☾', 'Crowns': '♛', 'Leaves': '♣', 'Suns': '☼', 'Waves': '≈',
@@ -510,24 +523,19 @@ def load_card_image(card_name):
             'Dust': '⋱', 'Mists': '〰', 'Roses': '✾', 'Thorns': '†', 'Paws': '☸', 'Hooves': '∩',
             'Antlers': '∩', 'Shells': '◗', 'Fins': '∫', 'Stalks': '∣', 'Seeds': '•', 'Pods': '◉'
         }
-        # Draw suit symbol top left, then rank next to it
         if suit:
             symbol = suit_symbols.get(suit, '?')
             draw.text((10, 10), symbol, font=font, fill=color)
             draw.text((10 + font_size + 5, 10), str(rank), font=font, fill=color)
-            # Optionally, draw suit name below symbol (smaller font)
             try:
                 small_font = ImageFont.truetype('arial.ttf', 16)
             except Exception:
                 small_font = ImageFont.load_default()
             draw.text((10, 10 + font_size + 2), suit, font=small_font, fill=color)
         else:
-            # For specials, just draw rank top left
             draw.text((10, 10), str(rank), font=font, fill=color)
-        # Center delta symbol if rank is delta
         if rank == 'Δ':
             draw.text((CARD_IMAGE_SIZE[0]//2-10, CARD_IMAGE_SIZE[1]//2-10), 'Δ', font=font, fill=color)
-        # Optionally, add special card background
         if card_name in specials:
             draw.rectangle([0,0,CARD_IMAGE_SIZE[0],CARD_IMAGE_SIZE[1]], outline='#FFD700', width=8)
             draw.text((CARD_IMAGE_SIZE[0]//2-40, CARD_IMAGE_SIZE[1]//2-20), card_name, font=font, fill='#FFD700')
@@ -541,9 +549,17 @@ root.title('Card Game')
 root.attributes('-fullscreen', True)
 root.overrideredirect(True)  # Remove default title bar
 
-# Add card image label to GUI (move after root is defined)
-card_image_label = ttk.Label(root)
-card_image_label.pack(pady=10)
+
+# Draw pile image and click-to-draw
+def draw_pile_click(event=None):
+    draw_card()
+
+draw_pile_label = ttk.Label(root)
+draw_pile_label.pack(pady=10)
+draw_pile_img = load_card_image('Draw Pile', back=True)
+draw_pile_label.config(image=draw_pile_img)
+draw_pile_label.image = draw_pile_img
+draw_pile_label.bind('<Button-1>', draw_pile_click)
 
 # Card Art Gallery window
 def open_card_gallery():
@@ -798,38 +814,62 @@ def draw_card():
     total_label.config(text=f'Total: {total_count}')
     next_upgrade_discount = 1.0
     random.shuffle(deck)
-    # Show images for all drawn cards (multiple images for upgraded draw counts)
-    # Remove previous images if any
+
+    # Card flip animation for each drawn card
     if hasattr(root, 'card_image_frame'):
         root.card_image_frame.destroy()
     root.card_image_frame = ttk.Frame(root)
     root.card_image_frame.pack(pady=10)
-    def fade_in_multi(images, labels, step=0):
-        alpha = int(255 * (step / 10))
-        if alpha > 255:
-            alpha = 255
-        for idx, card in enumerate(drawn_cards):
-            try:
-                pil_img = Image.open(get_card_image_filename(card)).resize(CARD_IMAGE_SIZE).convert('RGBA')
-                pil_img.putalpha(alpha)
-                tk_img = ImageTk.PhotoImage(pil_img)
-                labels[idx].config(image=tk_img)
-                labels[idx].image = tk_img
-            except Exception:
-                pass
-        if step < 10:
-            root.after(30, lambda: fade_in_multi(images, labels, step+1))
-    images = []
+
+    def flip_card(label, card_name, step=0):
+        # step 0-5: show back, shrink horizontally
+        # step 6: switch to face, expand horizontally
+        if step <= 5:
+            img = load_card_image(card_name, back=True)
+            w = int(CARD_IMAGE_SIZE[0] * (1 - step/5))
+            if w < 10: w = 10
+            pil_img = Image.new('RGBA', (w, CARD_IMAGE_SIZE[1]), (0,0,0,0))
+            back_img = ImageTk.getimage(img).resize((w, CARD_IMAGE_SIZE[1]))
+            pil_img.paste(back_img, (0,0))
+            tk_img = ImageTk.PhotoImage(pil_img)
+            label.config(image=tk_img)
+            label.image = tk_img
+            root.after(30, lambda: flip_card(label, card_name, step+1))
+        elif step == 6:
+            # Switch to face, expand
+            img = load_card_image(card_name)
+            w = 10
+            pil_img = Image.new('RGBA', (w, CARD_IMAGE_SIZE[1]), (0,0,0,0))
+            face_img = ImageTk.getimage(img).resize((w, CARD_IMAGE_SIZE[1]))
+            pil_img.paste(face_img, (0,0))
+            tk_img = ImageTk.PhotoImage(pil_img)
+            label.config(image=tk_img)
+            label.image = tk_img
+            root.after(30, lambda: flip_card(label, card_name, step+7))
+        elif step > 6 and step < 13:
+            img = load_card_image(card_name)
+            w = int(CARD_IMAGE_SIZE[0] * ((step-6)/6))
+            if w > CARD_IMAGE_SIZE[0]: w = CARD_IMAGE_SIZE[0]
+            pil_img = Image.new('RGBA', (w, CARD_IMAGE_SIZE[1]), (0,0,0,0))
+            face_img = ImageTk.getimage(img).resize((w, CARD_IMAGE_SIZE[1]))
+            pil_img.paste(face_img, (0,0))
+            tk_img = ImageTk.PhotoImage(pil_img)
+            label.config(image=tk_img)
+            label.image = tk_img
+            root.after(30, lambda: flip_card(label, card_name, step+1))
+        else:
+            img = load_card_image(card_name)
+            label.config(image=img)
+            label.image = img
+
     labels = []
     for idx, card in enumerate(drawn_cards):
-        img = load_card_image(card)
-        lbl = ttk.Label(root.card_image_frame, image=img)
-        lbl.image = img
+        lbl = ttk.Label(root.card_image_frame)
         lbl.grid(row=0, column=idx, padx=5)
-        images.append(img)
         labels.append(lbl)
-    if drawn_cards:
-        fade_in_multi(images, labels, 0)
+    for idx, card in enumerate(drawn_cards):
+        flip_card(labels[idx], card)
+
     # Optionally, add score to leaderboard
     add_score_to_leaderboard('Player', total_count)
 
