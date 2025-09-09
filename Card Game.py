@@ -8,6 +8,10 @@ import os
 import sys
 from PIL import Image, ImageTk, ImageDraw, ImageFont
 
+# Card pronouns
+card_pronouns = [
+    'He/Him', 'She/Her', 'They/Them', 'It/Its', 'Xe/Xer', 'Xe/Xim', 'Any/All', 'Chaos/Chaos', 'We/Us'
+]
 
 # Card deck and upgrade system
 base_suits = [
@@ -1140,5 +1144,6 @@ def on_spacebar(event):
         result_label.config(text='Spacebar on cooldown!')
 
 root.bind('<space>', on_spacebar)
+
 
 root.mainloop()
